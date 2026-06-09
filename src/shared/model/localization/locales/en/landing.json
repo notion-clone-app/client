@@ -1,0 +1,22 @@
+{
+    "header": {
+        "menu": {
+            "about": "About me",
+            "hh_link": "Head hunter",
+            "linked_in_link": "Linked in",
+            "architecture": "Architecture"
+        },
+        "actions": {
+            "login": "Login",
+            "registration": "Registration"
+        }
+    },
+    "hero": {
+        "title": "Everything in one place: From idea to execution.",
+        "subtitle": "Create documents, manage databases, and organize your workflow in an intuitive digital workspace. Built from scratch by Sergey Glotov.",
+        "buttons": {
+            "cta": "Try it now",
+            "github": "View on GitHub"
+        }
+    }
+}
