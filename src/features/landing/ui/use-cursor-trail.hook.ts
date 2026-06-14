@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
-const HIDDEN_STROKE_PATTERNS = ["---------", "=========", ":::::::::", "........."];
-const CLICK_WAVE_PATTERNS = [">>>>>>>>?", "<<<<<<<<<", "000000000", "+++++++++"];
+const HIDDEN_STROKE_PATTERNS = ["·", " ", " ", "·", "+", " "];
+const CLICK_WAVE_PATTERNS = ["+", "×", "•", "◦", " "];
 
 const LEN_STROKE = HIDDEN_STROKE_PATTERNS.length;
 const LEN_WAVE = CLICK_WAVE_PATTERNS.length;
@@ -22,9 +22,9 @@ export const useCursorTrail = (canvasRef: React.RefObject<HTMLCanvasElement | nu
 
         let width = window.innerWidth;
         let height = window.innerHeight;
-        let spacingX = width < 768 ? 48 : 34;
-        let spacingY = width < 768 ? 20 : 13;
-        let hoverRadius = width < 768 ? 90 : 150;
+        let spacingX = 20;
+        let spacingY = 20;
+        let hoverRadius = width < 768 ? 60 : 120;
 
         let cols = Math.ceil(width / spacingX) + 1;
         let rows = Math.ceil(height / spacingY) + 1;
@@ -65,7 +65,7 @@ export const useCursorTrail = (canvasRef: React.RefObject<HTMLCanvasElement | nu
                     targetOpacity = 1 - distMouse / hoverRadius;
                 }
 
-                opacities[i] += (targetOpacity - opacities[i]) * 0.1;
+                opacities[i] += (targetOpacity - opacities[i]) * 0.05;
 
                 let isWaveActiveForCell = false;
                 let waveDist = 0;
@@ -119,9 +119,9 @@ export const useCursorTrail = (canvasRef: React.RefObject<HTMLCanvasElement | nu
             canvas.style.width = `${width}px`;
             canvas.style.height = `${height}px`;
 
-            spacingX = width < 768 ? 48 : 34;
-            spacingY = width < 768 ? 20 : 13;
-            hoverRadius = width < 768 ? 90 : 150;
+            spacingX = 20;
+            spacingY = 20;
+            hoverRadius = width < 768 ? 60 : 120;
 
             cols = Math.ceil(width / spacingX) + 1;
             rows = Math.ceil(height / spacingY) + 1;
@@ -129,7 +129,7 @@ export const useCursorTrail = (canvasRef: React.RefObject<HTMLCanvasElement | nu
 
             opacities = new Float32Array(totalParticles);
 
-            ctx.font = "12px monospace";
+            ctx.font = "14px monospace";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 
