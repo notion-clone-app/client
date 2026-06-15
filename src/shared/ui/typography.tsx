@@ -31,7 +31,7 @@ export const TypographyP: FC<HTMLAttributes<HTMLParagraphElement>> = ({ classNam
 export const TypographyLead: FC<HTMLAttributes<HTMLParagraphElement>> = ({ className, ...props }) => {
     return (
         <p
-            className={cn("text-xl md:text-2xl font-normal text-muted-foreground", className)}
+            className={cn("text-lg md:text-xl font-normal text-muted-foreground", className)}
             {...props}
         />
     )

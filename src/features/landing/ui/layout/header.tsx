@@ -1,23 +1,23 @@
 import { cn } from "@/shared/lib/css"
-import { LandingContainer } from "../container"
-import { Logo } from "../../logo"
+import { ROUTES } from "@/shared/model"
+import { useTranslation } from '@/shared/model/localization'
 import { Button } from "@/shared/ui/kit/button"
 import { ExternalLink } from "lucide-react"
-import { Link } from "react-router"
-import { PickLanguageDropdown } from "../../pick-language-dropdown"
-import { ToggleTheme } from "../toggle-theme"
-import { ROUTES } from "@/shared/model"
 import type { FC, ReactNode } from "react"
-import { useTranslation } from '@/shared/model/localization'
+import { Link } from "react-router"
+import { Logo } from "../../logo"
+import { PickLanguageDropdown } from "../../pick-language-dropdown"
 import { useWindowScroll } from "../../use-window-scroll.hook"
+import { LandingContainer } from "../container"
+import { ToggleTheme } from "../toggle-theme"
 
 const NavLink: FC<{ children: ReactNode, isScrolled: boolean }> = ({ children, isScrolled }) => (
-    <Button 
-        variant="link" 
+    <Button
+        variant="link"
         className={cn(
             "text-sm font-medium transition-colors h-auto p-0",
-            isScrolled ? "text-muted-foreground hover:text-foreground" : "text-white/80 hover:text-white"
-        )} 
+            isScrolled ? "text-foreground" : "text-black/80 hover:text-black"
+        )}
         asChild
     >
         {children}
@@ -33,8 +33,8 @@ export const LandingHeader: FC = () => {
         <header
             className={cn(
                 "fixed top-0 left-0 w-full z-20 h-16 flex items-center transition-all duration-300",
-                isScrolled 
-                    ? "bg-background/90 backdrop-blur-md border-b border-border shadow-sm text-foreground" 
+                isScrolled
+                    ? "bg-background/90 backdrop-blur-md border-b border-border shadow-sm text-foreground"
                     : "bg-transparent border-transparent text-white"
             )}
         >
@@ -68,21 +68,14 @@ export const LandingHeader: FC = () => {
 
                     <div className="flex items-center gap-4">
                         <div className="hidden md:flex items-center gap-2">
-                            <Button 
-                                variant="ghost" 
-                                className={cn(
-                                    "text-sm font-medium h-9",
-                                    !isScrolled && "text-white hover:text-white hover:bg-white/10"
-                                )} 
+                            <Button
+                                variant="secondary"
                                 asChild
                             >
                                 <Link to={ROUTES.LOGIN}>{t('landing:header.actions.login')}</Link>
                             </Button>
-                            <Button 
-                                className={cn(
-                                    "h-9 text-sm font-medium px-4",
-                                    !isScrolled && "bg-white text-black hover:bg-white/90"
-                                )} 
+                            <Button
+
                                 asChild
                             >
                                 <Link to={ROUTES.LOGIN}>{t('landing:header.actions.registration')}</Link>
