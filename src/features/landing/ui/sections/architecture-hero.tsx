@@ -1,72 +1,59 @@
-import type { FC } from "react"
-import { motion } from "motion/react"
+import { useRef, type FC } from "react"
+import { motion, useScroll, useTransform } from "motion/react"
 import { LandingContainer } from "../container"
 import { TypographyH1, TypographyLead } from "@/shared/ui/typography"
-import { useTranslation } from "@/shared/model/localization"
 import { ChevronDown } from "lucide-react"
+import { HeroParticles } from "../hero-particles" // Импортируем частицы
 
 export const ArchitectureHero: FC = () => {
-    const { t } = useTranslation()
+    const containerRef = useRef<HTMLDivElement>(null)
+
+    const { scrollYProgress } = useScroll({
+        target: containerRef,
+        offset: ["start start", "end start"]
+    })
+
+    const backgroundY = useTransform(scrollYProgress, [0, 1], ["0%", "25%"])
+    const contentY = useTransform(scrollYProgress, [0, 1], ["0%", "45%"])
+    const contentOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
+    const arrowOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0])
 
     return (
-        <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
-            {/* Animated dot grid background */}
-            <div
-                className="absolute inset-0 opacity-[0.4] dark:opacity-[0.15]"
-                style={{
-                    backgroundImage: `radial-gradient(circle, currentColor 1px, transparent 1px)`,
-                    backgroundSize: "32px 32px",
-                }}
-            />
-
-            {/* Radial gradient overlay */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,var(--color-background)_70%)]" />
-
-            <LandingContainer>
-                <motion.div
-                    className="relative z-10 flex flex-col items-center gap-8 text-center"
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-                >
-                    {/* Badge */}
-                    <motion.div
-                        className="flex items-center gap-2 rounded-full border border-border/60 bg-secondary/50 px-4 py-1.5 backdrop-blur-sm"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.2, duration: 0.5 }}
-                    >
-                        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-sm font-medium text-muted-foreground">
-                            {t('landing:architecture.hero.badge')}
-                        </span>
-                    </motion.div>
-
-                    {/* Title */}
-                    <TypographyH1 className="max-w-4xl">
-                        {t('landing:architecture.hero.title')}
-                    </TypographyH1>
-
-                    {/* Subtitle */}
-                    <TypographyLead className="max-w-2xl">
-                        {t('landing:architecture.hero.subtitle')}
-                    </TypographyLead>
-                </motion.div>
-            </LandingContainer>
-
-            {/* Scroll indicator */}
+        <section
+            ref={containerRef}
+            className="relative min-h-[100vh] flex items-center justify-center overflow-hidden bg-background"
+        >
             <motion.div
-                className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1, duration: 0.6 }}
+                className="absolute w-full left-0 inset-0"
+                style={{ y: backgroundY }}
             >
-                <motion.div
-                    animate={{ y: [0, 8, 0] }}
-                    transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                >
-                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                </motion.div>
+                <HeroParticles />
+            </motion.div>
+
+            <motion.div
+                style={{ y: contentY, opacity: contentOpacity }}
+                className="w-full relative z-10"
+            >
+                <LandingContainer>
+                    <motion.div
+                        className="flex flex-col items-center gap-8 text-center"
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    >
+                        <div className="max-w-3xl space-y-4">
+                            <TypographyH1>System Design</TypographyH1>
+                        </div>
+                    </motion.div>
+                </LandingContainer>
+            </motion.div>
+
+            {/* Стрелка вниз */}
+            <motion.div
+                style={{ opacity: arrowOpacity }}
+                className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
+            >
+                <ChevronDown className="h-6 w-6 animate-bounce text-muted-foreground" />
             </motion.div>
         </section>
     )

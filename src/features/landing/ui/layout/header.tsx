@@ -16,7 +16,6 @@ const NavLink: FC<{ children: ReactNode, isScrolled: boolean }> = ({ children, i
         variant="link"
         className={cn(
             "text-sm font-medium transition-colors h-auto p-0",
-            isScrolled ? "text-foreground" : "text-black/80 hover:text-black"
         )}
         asChild
     >
@@ -34,7 +33,7 @@ export const LandingHeader: FC = () => {
             className={cn(
                 "fixed top-0 left-0 w-full z-20 h-16 flex items-center transition-all duration-300",
                 isScrolled
-                    ? "bg-background/90 backdrop-blur-md border-b border-border shadow-sm text-foreground"
+                    ? "bg-background border-b border-border text-foreground"
                     : "bg-transparent border-transparent text-white"
             )}
         >
