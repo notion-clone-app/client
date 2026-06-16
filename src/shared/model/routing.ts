@@ -3,6 +3,7 @@ import "react-router";
 export const ROUTES = {
     HOME: "/",
     ARCHITECTURE: "/architecture",
+    BUSINESS_REQUIREMENTS: '/requirements',
     LOGIN: "/login",
     REGISTRATION: "/registration",
 } as const;

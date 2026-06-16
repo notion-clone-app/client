@@ -1,9 +1,12 @@
 import { useRef, type FC } from "react"
 import { motion, useScroll, useTransform } from "motion/react"
 import { LandingContainer } from "../container"
-import { TypographyH1, TypographyLead } from "@/shared/ui/typography"
+import { TypographyH1 } from "@/shared/ui/typography"
 import { ChevronDown } from "lucide-react"
-import { HeroParticles } from "../hero-particles" // Импортируем частицы
+import { SpaceParticles } from "../space-particles" // Импортируем частицы
+import { Button } from "@/shared/ui/kit/button"
+import { Link } from "react-router"
+import { ROUTES } from "@/shared/model"
 
 export const ArchitectureHero: FC = () => {
     const containerRef = useRef<HTMLDivElement>(null)
@@ -27,7 +30,7 @@ export const ArchitectureHero: FC = () => {
                 className="absolute w-full left-0 inset-0"
                 style={{ y: backgroundY }}
             >
-                <HeroParticles />
+                <SpaceParticles />
             </motion.div>
 
             <motion.div
@@ -43,12 +46,16 @@ export const ArchitectureHero: FC = () => {
                     >
                         <div className="max-w-3xl space-y-4">
                             <TypographyH1>System Design</TypographyH1>
+                            <Button asChild variant="secondary">
+                                <Link to={ROUTES.BUSINESS_REQUIREMENTS}>
+                                    View business requirements
+                                </Link>
+                            </Button>
                         </div>
                     </motion.div>
                 </LandingContainer>
             </motion.div>
 
-            {/* Стрелка вниз */}
             <motion.div
                 style={{ opacity: arrowOpacity }}
                 className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"

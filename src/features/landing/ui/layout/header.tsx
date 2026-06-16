@@ -11,7 +11,7 @@ import { useWindowScroll } from "../../use-window-scroll.hook"
 import { LandingContainer } from "../container"
 import { ToggleTheme } from "../toggle-theme"
 
-const NavLink: FC<{ children: ReactNode, isScrolled: boolean }> = ({ children, isScrolled }) => (
+const NavLink: FC<{ children: ReactNode, isScrolled: boolean }> = ({ children }) => (
     <Button
         variant="link"
         className={cn(

@@ -12,6 +12,10 @@ const routerConfig = createBrowserRouter([
     lazy: () => import("../features/landing/architecture.page"),
   },
   {
+    path: ROUTES.BUSINESS_REQUIREMENTS,
+    lazy: () => import("../features/landing/requirements.page"),
+  },
+  {
     path: ROUTES.LOGIN,
     lazy: () => import("../features/authentication/login.page"),
   },

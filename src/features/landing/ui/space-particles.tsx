@@ -13,7 +13,7 @@ interface Particle {
     vy: number; // Скорость по Y для физики взрыва
 }
 
-export const HeroParticles: React.FC = () => {
+export const SpaceParticles: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
     useEffect(() => {
