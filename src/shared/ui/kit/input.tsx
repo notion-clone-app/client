@@ -40,7 +40,7 @@ export const Input: FC<Props> = ({
 
           "autofill:shadow-[inset_0_0_0_1000px_var(--color-card)]", // autofill state background
           "autofill:[-webkit-text-fill-color:var(--color-foreground)]", // autofill text color
-          "autofill:transition-[background-color] autofill:duration-[9999s] autofill:delay-0", // freeze autofill state
+          "autofill:transition-[background-color] autofill:delay-0 autofill:duration-[9999s]", // freeze autofill state
 
           { "border-destructive ring-2 ring-destructive/15": hasErrors },
           className,
