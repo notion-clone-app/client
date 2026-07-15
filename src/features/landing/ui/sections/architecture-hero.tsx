@@ -3,7 +3,7 @@ import { motion, useScroll, useTransform } from "motion/react"
 import { LandingContainer } from "../container"
 import { TypographyH1 } from "@/shared/ui/typography"
 import { ChevronDown } from "lucide-react"
-import { SpaceParticles } from "../space-particles" // Импортируем частицы
+import { SpaceParticles } from "../space-particles"
 import { Button } from "@/shared/ui/kit/button"
 import { Link } from "react-router"
 import { ROUTES } from "@/shared/model"

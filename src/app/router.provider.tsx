@@ -17,11 +17,11 @@ const routerConfig = createBrowserRouter([
   },
   {
     path: ROUTES.LOGIN,
-    lazy: () => import("../features/authentication/login.page"),
+    lazy: () => import("@/modules/identity/login/login.page"),
   },
   {
     path: ROUTES.REGISTRATION,
-    lazy: () => import("../features/authentication/registration.page"),
+    lazy: () => import("@/modules/identity/registration/registration.page"),
   },
 ]);
 

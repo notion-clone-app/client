@@ -8,7 +8,7 @@ export const ROUTES = {
     REGISTRATION: "/registration",
 } as const;
 
-export type PathParams = {};
+export type PathParams = Record<string, never>;
 
 declare module "react-router" {
     interface Register {

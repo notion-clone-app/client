@@ -11,11 +11,11 @@ import { useWindowScroll } from "../../use-window-scroll.hook"
 import { LandingContainer } from "../container"
 import { ToggleTheme } from "../toggle-theme"
 
-const NavLink: FC<{ children: ReactNode, isScrolled: boolean }> = ({ children }) => (
+const NavLink: FC<{ children: ReactNode }> = ({ children }) => (
     <Button
         variant="link"
         className={cn(
-            "text-sm font-medium transition-colors h-auto p-0",
+            "h-auto p-0 text-sm font-medium text-[inherit] transition-colors hover:text-[inherit] hover:opacity-70",
         )}
         asChild
     >
@@ -33,8 +33,8 @@ export const LandingHeader: FC = () => {
             className={cn(
                 "fixed top-0 left-0 w-full z-20 h-16 flex items-center transition-all duration-300",
                 isScrolled
-                    ? "bg-background border-b border-border text-foreground"
-                    : "bg-transparent border-transparent text-white"
+                    ? "border-b border-border bg-background/90 text-foreground shadow-xs backdrop-blur-xl"
+                    : "border-transparent bg-transparent text-foreground"
             )}
         >
             <LandingContainer>
@@ -44,22 +44,22 @@ export const LandingHeader: FC = () => {
                             <Logo />
                         </Link>
                         <nav className="hidden md:flex items-center gap-6">
-                            <NavLink isScrolled={isScrolled}>
+                            <NavLink>
                                 <span>{t('landing:header.menu.about')}</span>
                             </NavLink>
-                            <NavLink isScrolled={isScrolled}>
+                            <NavLink>
                                 <a href="#" target="_blank" rel="noreferrer" className="flex items-center gap-1.5">
                                     <span>Head hunter</span>
                                     <ExternalLink className="size-3.5" />
                                 </a>
                             </NavLink>
-                            <NavLink isScrolled={isScrolled}>
+                            <NavLink>
                                 <a href="#" target="_blank" rel="noreferrer" className="flex items-center gap-1.5">
                                     <span>LinkedIn</span>
                                     <ExternalLink className="size-3.5" />
                                 </a>
                             </NavLink>
-                            <NavLink isScrolled={isScrolled}>
+                            <NavLink>
                                 <Link to={ROUTES.ARCHITECTURE}>{t('landing:header.menu.architecture')}</Link>
                             </NavLink>
                         </nav>
@@ -73,16 +73,13 @@ export const LandingHeader: FC = () => {
                             >
                                 <Link to={ROUTES.LOGIN}>{t('landing:header.actions.login')}</Link>
                             </Button>
-                            <Button
-
-                                asChild
-                            >
-                                <Link to={ROUTES.LOGIN}>{t('landing:header.actions.registration')}</Link>
+                            <Button asChild>
+                                <Link to={ROUTES.REGISTRATION}>{t('landing:header.actions.registration')}</Link>
                             </Button>
                         </div>
                         <div className={cn(
                             "flex items-center gap-2 border-l pl-4",
-                            isScrolled ? "border-border" : "border-white/20"
+                            "border-border"
                         )}>
                             <PickLanguageDropdown />
                             <ToggleTheme />
