@@ -1,9 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { ROUTES } from "@/shared/model";
-import { authSession } from "../session/auth-session";
+import { acceptSession } from "../session/session-manager";
 import { login } from "./login.api";
 import { LoginError } from "./login.contracts";
 import { loginFormSchema, type LoginFormValues } from "./login-form.schema";
@@ -19,7 +20,7 @@ export function useLoginForm() {
     mutationKey: ["identity", "login"],
     mutationFn: (command: LoginFormValues) => login(command),
     onSuccess: (session) => {
-      authSession.set(session);
+      acceptSession(session);
       void navigate(ROUTES.HOME, { replace: true });
     },
   });
@@ -40,4 +41,3 @@ export function useLoginForm() {
     submit,
   };
 }
-import { useState } from "react";

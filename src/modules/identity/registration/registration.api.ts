@@ -15,6 +15,7 @@ export async function register(
       method: "POST",
       body: command,
       signal: signal ?? null,
+      auth: "none",
     });
 
     return mapAuthSessionDto(dto);

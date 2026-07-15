@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { ROUTES } from "@/shared/model";
-import { authSession } from "../session/auth-session";
+import { acceptSession } from "../session/session-manager";
 import { register } from "./registration.api";
 import { RegistrationError, type RegistrationCommand } from "./registration.contracts";
 import { registrationFormSchema, type RegistrationFormValues } from "./registration-form.schema";
@@ -20,7 +20,7 @@ export function useRegistrationForm() {
     mutationKey: ["identity", "registration"],
     mutationFn: (command: RegistrationCommand) => register(command),
     onSuccess: (session) => {
-      authSession.set(session);
+      acceptSession(session);
       void navigate(ROUTES.HOME, { replace: true });
     },
   });

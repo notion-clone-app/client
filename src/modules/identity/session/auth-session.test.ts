@@ -4,37 +4,35 @@ import { mapAuthSessionDto } from "./auth-session.dto";
 
 describe("auth session", () => {
   afterEach(() => {
-    authSession.clear();
+    authSession.reset();
     vi.useRealTimers();
   });
 
-  it("maps relative expiration values to timestamps", () => {
+  it("stores only non-secret access expiration metadata", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-15T10:00:00Z"));
 
-    const session = mapAuthSessionDto({
-      accessToken: "access",
-      refreshToken: "refresh",
-      accessExpiresIn: 60,
-      refreshExpiresIn: 3_600,
-    });
+    const session = mapAuthSessionDto({ accessExpiresIn: 60 });
 
-    expect(session.accessExpiresAt).toBe(Date.now() + 60_000);
-    expect(session.refreshExpiresAt).toBe(Date.now() + 3_600_000);
+    expect(session).toEqual({ accessExpiresAt: Date.now() + 60_000 });
+    expect(session).not.toHaveProperty("accessToken");
+    expect(session).not.toHaveProperty("refreshToken");
   });
 
-  it("stores and clears the current session", () => {
-    const session = {
-      accessToken: "access",
-      refreshToken: "refresh",
-      accessExpiresAt: 1,
-      refreshExpiresAt: 2,
-    };
+  it("publishes authenticated and anonymous states", () => {
+    const listener = vi.fn();
+    const unsubscribe = authSession.subscribe(listener);
 
-    authSession.set(session);
-    expect(authSession.get()).toEqual(session);
+    authSession.authenticate({ accessExpiresAt: 1 });
+    expect(authSession.getSnapshot()).toEqual({
+      status: "authenticated",
+      session: { accessExpiresAt: 1 },
+    });
 
     authSession.clear();
-    expect(authSession.get()).toBeNull();
+    expect(authSession.getSnapshot()).toEqual({ status: "anonymous" });
+    expect(listener).toHaveBeenCalledTimes(2);
+
+    unsubscribe();
   });
 });

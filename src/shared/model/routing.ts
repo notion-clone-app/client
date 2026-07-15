@@ -4,8 +4,10 @@ export const ROUTES = {
   HOME: "/",
   ARCHITECTURE: "/architecture",
   BUSINESS_REQUIREMENTS: "/requirements",
+  APP: "/app",
   LOGIN: "/login",
   REGISTRATION: "/registration",
+  FORBIDDEN: "/forbidden",
 } as const;
 
 type PathParams = Record<string, never>;

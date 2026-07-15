@@ -40,17 +40,11 @@ export default defineConfig([
   {
     files: ["src/shared/**/*.{ts,tsx}"],
     rules: {
-      "no-restricted-imports": ["error", { patterns: ["@/app/*", "@/features/*", "@/modules/*"] }],
+      "no-restricted-imports": ["error", { patterns: ["@/app/*", "@/modules/*"] }],
     },
   },
   {
     files: ["src/modules/**/*.{ts,tsx}"],
-    rules: {
-      "no-restricted-imports": ["error", { patterns: ["@/app/*", "@/features/*"] }],
-    },
-  },
-  {
-    files: ["src/features/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": ["error", { patterns: ["@/app/*", "@/modules/*"] }],
     },

@@ -12,6 +12,7 @@ export async function login(command: LoginCommand, signal?: AbortSignal): Promis
       method: "POST",
       body: command,
       signal: signal ?? null,
+      auth: "none",
     });
     return mapAuthSessionDto(dto);
   } catch (error) {
