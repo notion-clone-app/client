@@ -5,12 +5,12 @@ import { ROUTES } from "@/shared/model";
 import { useLoginForm } from "./use-login-form";
 
 export function LoginForm() {
-  const { form, isSubmitting, submit } = useLoginForm();
+  const { form, formError, isSubmitting, submit } = useLoginForm();
   const emailError = form.formState.errors.email?.message;
   const passwordError = form.formState.errors.password?.message;
 
   return (
-    <form className="grid gap-3" noValidate onSubmit={submit}>
+    <form className="grid gap-3" noValidate onSubmit={(event) => void submit(event)}>
       <Input
         {...form.register("email")}
         type="email"
@@ -31,11 +31,26 @@ export function LoginForm() {
         hasErrors={Boolean(passwordError)}
         messages={passwordError}
       />
-      <Button className="mt-1 h-[52px] w-full rounded-2xl text-base" disabled={isSubmitting} type="submit">
+      <Button
+        className="mt-1 h-[52px] w-full rounded-2xl text-base"
+        disabled={isSubmitting}
+        type="submit"
+      >
         {isSubmitting ? "Входим…" : "Войти"}
       </Button>
+      {formError && (
+        <p role="alert" className="text-center text-sm text-destructive">
+          {formError}
+        </p>
+      )}
       <p className="mt-2 text-center text-sm text-muted-foreground">
-        Нет аккаунта? <Link className="font-medium text-foreground underline-offset-4 hover:underline" to={ROUTES.REGISTRATION}>Зарегистрироваться</Link>
+        Нет аккаунта?{" "}
+        <Link
+          className="font-medium text-foreground underline-offset-4 hover:underline"
+          to={ROUTES.REGISTRATION}
+        >
+          Зарегистрироваться
+        </Link>
       </p>
     </form>
   );

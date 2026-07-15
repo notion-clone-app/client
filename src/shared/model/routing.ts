@@ -1,17 +1,17 @@
 import "react-router";
 
 export const ROUTES = {
-    HOME: "/",
-    ARCHITECTURE: "/architecture",
-    BUSINESS_REQUIREMENTS: '/requirements',
-    LOGIN: "/login",
-    REGISTRATION: "/registration",
+  HOME: "/",
+  ARCHITECTURE: "/architecture",
+  BUSINESS_REQUIREMENTS: "/requirements",
+  LOGIN: "/login",
+  REGISTRATION: "/registration",
 } as const;
 
-export type PathParams = Record<string, never>;
+type PathParams = Record<string, never>;
 
 declare module "react-router" {
-    interface Register {
-        params: PathParams;
-    }
+  interface Register {
+    params: PathParams;
+  }
 }

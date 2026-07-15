@@ -1,2 +1,2 @@
-export * from './hero'
-export * from './stack'
+export * from "./hero";
+export * from "./stack";

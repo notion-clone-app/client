@@ -11,7 +11,7 @@ export async function login(command: LoginCommand, signal?: AbortSignal): Promis
     const dto = await httpClient<AuthSessionDto>("/v1/auth/login", {
       method: "POST",
       body: command,
-      signal,
+      signal: signal ?? null,
     });
     return mapAuthSessionDto(dto);
   } catch (error) {

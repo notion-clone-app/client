@@ -9,7 +9,7 @@ export function RegistrationForm() {
   const errors = form.formState.errors;
 
   return (
-    <form className="grid gap-3" noValidate onSubmit={submit}>
+    <form className="grid gap-3" noValidate onSubmit={(event) => void submit(event)}>
       <Input
         {...form.register("name")}
         autoComplete="name"
@@ -58,11 +58,21 @@ export function RegistrationForm() {
         hasErrors={Boolean(errors.passwordConfirmation)}
         messages={errors.passwordConfirmation?.message}
       />
-      <Button className="mt-1 h-[52px] w-full rounded-2xl text-base" disabled={isSubmitting} type="submit">
+      <Button
+        className="mt-1 h-[52px] w-full rounded-2xl text-base"
+        disabled={isSubmitting}
+        type="submit"
+      >
         {isSubmitting ? "Создаём аккаунт…" : "Зарегистрироваться"}
       </Button>
       <p className="mt-2 text-center text-sm text-muted-foreground">
-        Уже есть аккаунт? <Link className="font-medium text-foreground underline-offset-4 hover:underline" to={ROUTES.LOGIN}>Войти</Link>
+        Уже есть аккаунт?{" "}
+        <Link
+          className="font-medium text-foreground underline-offset-4 hover:underline"
+          to={ROUTES.LOGIN}
+        >
+          Войти
+        </Link>
       </p>
     </form>
   );

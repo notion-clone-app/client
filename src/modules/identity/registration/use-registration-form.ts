@@ -21,7 +21,7 @@ export function useRegistrationForm() {
     mutationFn: (command: RegistrationCommand) => register(command),
     onSuccess: (session) => {
       authSession.set(session);
-      navigate(ROUTES.HOME, { replace: true });
+      void navigate(ROUTES.HOME, { replace: true });
     },
   });
 
@@ -30,6 +30,7 @@ export function useRegistrationForm() {
     try {
       await mutation.mutateAsync({
         name: values.name.trim(),
+        lastName: values.lastName.trim(),
         email: values.email.trim().toLowerCase(),
         password: values.password,
       });
