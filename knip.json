@@ -1,0 +1,14 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "project": ["src/**/*.{ts,tsx}"],
+  "ignore": [
+    "src/features/document/**",
+    "src/features/landing/index.ts",
+    "src/features/landing/ui/layout/footer-links.tsx",
+    "src/features/landing/ui/sections/technology-layers.tsx",
+    "src/modules/identity/index.ts",
+    "src/shared/model/localization/types.ts",
+    "src/shared/ui/kit/card.tsx"
+  ],
+  "ignoreDependencies": ["shadcn", "tailwindcss", "tw-animate-css"]
+}

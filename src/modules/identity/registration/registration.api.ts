@@ -6,12 +6,15 @@ import { RegistrationError, type RegistrationCommand } from "./registration.cont
 
 type ErrorResponseDto = { code?: string; message?: string };
 
-export async function register(command: RegistrationCommand, signal?: AbortSignal): Promise<AuthSession> {
+export async function register(
+  command: RegistrationCommand,
+  signal?: AbortSignal,
+): Promise<AuthSession> {
   try {
     const dto = await httpClient<AuthSessionDto>("/v1/auth/register", {
       method: "POST",
       body: command,
-      signal,
+      signal: signal ?? null,
     });
 
     return mapAuthSessionDto(dto);

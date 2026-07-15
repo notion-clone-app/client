@@ -5,10 +5,12 @@ import { useNavigate } from "react-router";
 import { ROUTES } from "@/shared/model";
 import { authSession } from "../session/auth-session";
 import { login } from "./login.api";
+import { LoginError } from "./login.contracts";
 import { loginFormSchema, type LoginFormValues } from "./login-form.schema";
 
 export function useLoginForm() {
   const navigate = useNavigate();
+  const [formError, setFormError] = useState("");
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: { email: "", password: "" },
@@ -18,21 +20,24 @@ export function useLoginForm() {
     mutationFn: (command: LoginFormValues) => login(command),
     onSuccess: (session) => {
       authSession.set(session);
-      navigate(ROUTES.HOME, { replace: true });
+      void navigate(ROUTES.HOME, { replace: true });
     },
   });
 
   const submit = form.handleSubmit(async (values) => {
+    setFormError("");
     try {
       await mutation.mutateAsync(values);
     } catch (error) {
-      console.log(error)
+      setFormError(error instanceof LoginError ? error.message : "Что-то пошло не так");
     }
   });
 
   return {
     form,
+    formError,
     isSubmitting: mutation.isPending,
     submit,
   };
 }
+import { useState } from "react";

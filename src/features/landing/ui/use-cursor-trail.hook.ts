@@ -7,198 +7,207 @@ const LEN_STROKE = HIDDEN_STROKE_PATTERNS.length;
 const LEN_WAVE = CLICK_WAVE_PATTERNS.length;
 
 export const useCursorTrail = (canvasRef: React.RefObject<HTMLCanvasElement | null>) => {
-    const mouseRef = useRef({ x: -1000, y: -1000 });
-    const clickWaveRef = useRef({ x: -1000, y: -1000, radius: 0, maxRadius: 420, active: false, speed: 8 });
-    const isMouseOverRef = useRef(false);
+  const mouseRef = useRef({ x: -1000, y: -1000 });
+  const clickWaveRef = useRef({
+    x: -1000,
+    y: -1000,
+    radius: 0,
+    maxRadius: 420,
+    active: false,
+    speed: 8,
+  });
+  const isMouseOverRef = useRef(false);
 
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext("2d", { alpha: true });
-        if (!ctx) return;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if (!ctx) return;
+    const context = ctx;
 
-        let animationFrameId: number;
-        let isLoopRunning = false;
+    let animationFrameId: number;
+    let isLoopRunning = false;
 
-        let width = window.innerWidth;
-        let height = window.innerHeight;
-        let spacingX = 20;
-        let spacingY = 20;
-        let hoverRadius = width < 768 ? 60 : 120;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let spacingX = 20;
+    let spacingY = 20;
+    let hoverRadius = width < 768 ? 60 : 120;
 
-        let cols = Math.ceil(width / spacingX) + 1;
-        let rows = Math.ceil(height / spacingY) + 1;
-        let totalParticles = cols * rows;
+    let cols = Math.ceil(width / spacingX) + 1;
+    let rows = Math.ceil(height / spacingY) + 1;
+    let totalParticles = cols * rows;
 
-        let opacities = new Float32Array(totalParticles);
+    let opacities = new Float32Array(totalParticles);
 
-        function renderFrame() {
-            ctx.clearRect(0, 0, width, height);
+    function renderFrame() {
+      context.clearRect(0, 0, width, height);
 
-            const mouse = mouseRef.current;
-            const wave = clickWaveRef.current;
+      const mouse = mouseRef.current;
+      const wave = clickWaveRef.current;
 
-            if (wave.active) {
-                wave.radius += wave.speed;
-                if (wave.radius > wave.maxRadius) {
-                    wave.active = false;
-                }
-            }
+      if (wave.active) {
+        wave.radius += wave.speed;
+        if (wave.radius > wave.maxRadius) {
+          wave.active = false;
+        }
+      }
 
-            const waveThickness = 60;
-            let hasActiveElements = false;
+      const waveThickness = 60;
+      let hasActiveElements = false;
 
-            for (let i = 0; i < totalParticles; i++) {
-                const r = Math.floor(i / cols);
-                const c = i % cols;
+      for (let i = 0; i < totalParticles; i++) {
+        const r = Math.floor(i / cols);
+        const c = i % cols;
 
-                const x = c * spacingX + spacingX / 2;
-                const y = r * spacingY + spacingY / 2;
+        const x = c * spacingX + spacingX / 2;
+        const y = r * spacingY + spacingY / 2;
 
-                const dxMouse = x - mouse.x;
-                const dyMouse = y - mouse.y;
-                const distMouseSq = dxMouse * dxMouse + dyMouse * dyMouse;
+        const dxMouse = x - mouse.x;
+        const dyMouse = y - mouse.y;
+        const distMouseSq = dxMouse * dxMouse + dyMouse * dyMouse;
 
-                let targetOpacity = 0;
-                if (isMouseOverRef.current && distMouseSq < hoverRadius * hoverRadius) {
-                    const distMouse = Math.sqrt(distMouseSq);
-                    targetOpacity = 1 - distMouse / hoverRadius;
-                }
-
-                opacities[i] += (targetOpacity - opacities[i]) * 0.05;
-
-                let isWaveActiveForCell = false;
-                let waveDist = 0;
-
-                if (wave.active) {
-                    const dxWave = x - wave.x;
-                    const dyWave = y - wave.y;
-                    const distWaveSq = dxWave * dxWave + dyWave * dyWave;
-                    waveDist = Math.sqrt(distWaveSq);
-
-                    if (waveDist > wave.radius - waveThickness && waveDist < wave.radius + waveThickness) {
-                        isWaveActiveForCell = true;
-                    }
-                }
-
-                if (opacities[i] < 0.01 && !isWaveActiveForCell) {
-                    opacities[i] = 0;
-                    continue;
-                }
-
-                hasActiveElements = true;
-
-                const patternIndex = (r + c) % LEN_STROKE;
-                let symbol = HIDDEN_STROKE_PATTERNS[patternIndex];
-                let currentOpacity = opacities[i];
-
-                if (isWaveActiveForCell) {
-                    const wavePatternIndex = (r - c + LEN_WAVE * 10) % LEN_WAVE;
-                    symbol = CLICK_WAVE_PATTERNS[wavePatternIndex];
-
-                    const waveFactor = 1 - Math.abs(waveDist - wave.radius) / waveThickness;
-                    currentOpacity = Math.max(currentOpacity, waveFactor);
-                }
-
-                ctx.fillStyle = `rgba(255, 255, 255, ${currentOpacity.toFixed(2)})`;
-                ctx.fillText(symbol, x, y);
-            }
-
-            return hasActiveElements;
+        let targetOpacity = 0;
+        if (isMouseOverRef.current && distMouseSq < hoverRadius * hoverRadius) {
+          const distMouse = Math.sqrt(distMouseSq);
+          targetOpacity = 1 - distMouse / hoverRadius;
         }
 
-        const resize = () => {
-            width = window.innerWidth;
-            height = window.innerHeight;
-            const dpr = window.devicePixelRatio || 1;
+        const opacity = opacities[i] ?? 0;
+        opacities[i] = opacity + (targetOpacity - opacity) * 0.05;
 
-            canvas.width = width * dpr;
-            canvas.height = height * dpr;
-            ctx.scale(dpr, dpr);
+        let isWaveActiveForCell = false;
+        let waveDist = 0;
 
-            canvas.style.width = `${width}px`;
-            canvas.style.height = `${height}px`;
+        if (wave.active) {
+          const dxWave = x - wave.x;
+          const dyWave = y - wave.y;
+          const distWaveSq = dxWave * dxWave + dyWave * dyWave;
+          waveDist = Math.sqrt(distWaveSq);
 
-            spacingX = 20;
-            spacingY = 20;
-            hoverRadius = width < 768 ? 60 : 120;
+          if (waveDist > wave.radius - waveThickness && waveDist < wave.radius + waveThickness) {
+            isWaveActiveForCell = true;
+          }
+        }
 
-            cols = Math.ceil(width / spacingX) + 1;
-            rows = Math.ceil(height / spacingY) + 1;
-            totalParticles = cols * rows;
+        if ((opacities[i] ?? 0) < 0.01 && !isWaveActiveForCell) {
+          opacities[i] = 0;
+          continue;
+        }
 
-            opacities = new Float32Array(totalParticles);
+        hasActiveElements = true;
 
-            ctx.font = "14px monospace";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
+        const patternIndex = (r + c) % LEN_STROKE;
+        let symbol = HIDDEN_STROKE_PATTERNS[patternIndex] ?? "";
+        let currentOpacity = opacities[i] ?? 0;
 
-            if (!isLoopRunning) renderFrame();
-        };
+        if (isWaveActiveForCell) {
+          const wavePatternIndex = (r - c + LEN_WAVE * 10) % LEN_WAVE;
+          symbol = CLICK_WAVE_PATTERNS[wavePatternIndex] ?? "";
 
-        const startLoopIfNeeded = () => {
-            if (!isLoopRunning) {
-                isLoopRunning = true;
-                render();
-            }
-        };
+          const waveFactor = 1 - Math.abs(waveDist - wave.radius) / waveThickness;
+          currentOpacity = Math.max(currentOpacity, waveFactor);
+        }
 
-        const handleMouseMove = (e: MouseEvent) => {
-            const rect = canvas.getBoundingClientRect();
-            mouseRef.current.x = e.clientX - rect.left;
-            mouseRef.current.y = e.clientY - rect.top;
-            isMouseOverRef.current = true;
-            startLoopIfNeeded();
-        };
+        context.fillStyle = `rgba(255, 255, 255, ${currentOpacity.toFixed(2)})`;
+        context.fillText(symbol, x, y);
+      }
 
-        const handleMouseEnter = () => {
-            isMouseOverRef.current = true;
-            startLoopIfNeeded();
-        };
+      return hasActiveElements;
+    }
 
-        const handleMouseLeave = () => {
-            isMouseOverRef.current = false;
-            mouseRef.current.x = -1000;
-            mouseRef.current.y = -1000;
-        };
+    const resize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      const dpr = window.devicePixelRatio || 1;
 
-        const handleClick = (e: MouseEvent) => {
-            const rect = canvas.getBoundingClientRect();
-            clickWaveRef.current.x = e.clientX - rect.left;
-            clickWaveRef.current.y = e.clientY - rect.top;
-            clickWaveRef.current.radius = 0;
-            clickWaveRef.current.active = true;
-            startLoopIfNeeded();
-        };
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      context.scale(dpr, dpr);
 
-        // Вызываем resize только после того, как все функции объявлены
-        resize();
-        window.addEventListener("resize", resize);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
 
-        canvas.addEventListener("mousemove", handleMouseMove);
-        canvas.addEventListener("mouseenter", handleMouseEnter);
-        canvas.addEventListener("mouseleave", handleMouseLeave);
-        canvas.addEventListener("click", handleClick);
+      spacingX = 20;
+      spacingY = 20;
+      hoverRadius = width < 768 ? 60 : 120;
 
-        const render = () => {
-            const shouldContinue = renderFrame();
+      cols = Math.ceil(width / spacingX) + 1;
+      rows = Math.ceil(height / spacingY) + 1;
+      totalParticles = cols * rows;
 
-            if (!isMouseOverRef.current && !shouldContinue) {
-                isLoopRunning = false;
-                ctx.clearRect(0, 0, width, height);
-                return;
-            }
+      opacities = new Float32Array(totalParticles);
 
-            animationFrameId = requestAnimationFrame(render);
-        };
+      context.font = "14px monospace";
+      context.textAlign = "center";
+      context.textBaseline = "middle";
 
-        return () => {
-            cancelAnimationFrame(animationFrameId);
-            window.removeEventListener("resize", resize);
-            canvas.removeEventListener("mousemove", handleMouseMove);
-            canvas.removeEventListener("mouseenter", handleMouseEnter);
-            canvas.removeEventListener("mouseleave", handleMouseLeave);
-            canvas.removeEventListener("click", handleClick);
-        };
-    }, [canvasRef]);
+      if (!isLoopRunning) renderFrame();
+    };
+
+    const startLoopIfNeeded = () => {
+      if (!isLoopRunning) {
+        isLoopRunning = true;
+        render();
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      mouseRef.current.x = e.clientX - rect.left;
+      mouseRef.current.y = e.clientY - rect.top;
+      isMouseOverRef.current = true;
+      startLoopIfNeeded();
+    };
+
+    const handleMouseEnter = () => {
+      isMouseOverRef.current = true;
+      startLoopIfNeeded();
+    };
+
+    const handleMouseLeave = () => {
+      isMouseOverRef.current = false;
+      mouseRef.current.x = -1000;
+      mouseRef.current.y = -1000;
+    };
+
+    const handleClick = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      clickWaveRef.current.x = e.clientX - rect.left;
+      clickWaveRef.current.y = e.clientY - rect.top;
+      clickWaveRef.current.radius = 0;
+      clickWaveRef.current.active = true;
+      startLoopIfNeeded();
+    };
+
+    // Вызываем resize только после того, как все функции объявлены
+    resize();
+    window.addEventListener("resize", resize);
+
+    canvas.addEventListener("mousemove", handleMouseMove);
+    canvas.addEventListener("mouseenter", handleMouseEnter);
+    canvas.addEventListener("mouseleave", handleMouseLeave);
+    canvas.addEventListener("click", handleClick);
+
+    const render = () => {
+      const shouldContinue = renderFrame();
+
+      if (!isMouseOverRef.current && !shouldContinue) {
+        isLoopRunning = false;
+        context.clearRect(0, 0, width, height);
+        return;
+      }
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener("resize", resize);
+      canvas.removeEventListener("mousemove", handleMouseMove);
+      canvas.removeEventListener("mouseenter", handleMouseEnter);
+      canvas.removeEventListener("mouseleave", handleMouseLeave);
+      canvas.removeEventListener("click", handleClick);
+    };
+  }, [canvasRef]);
 };
