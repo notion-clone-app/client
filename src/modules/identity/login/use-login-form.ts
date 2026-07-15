@@ -3,14 +3,15 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
-import { ROUTES } from "@/shared/model";
 import { acceptSession } from "../session/session-manager";
+import { usePostAuthRedirect } from "../use-post-auth-redirect.hook";
 import { login } from "./login.api";
 import { LoginError } from "./login.contracts";
 import { loginFormSchema, type LoginFormValues } from "./login-form.schema";
 
 export function useLoginForm() {
   const navigate = useNavigate();
+  const postAuthRedirect = usePostAuthRedirect();
   const [formError, setFormError] = useState("");
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -21,7 +22,7 @@ export function useLoginForm() {
     mutationFn: (command: LoginFormValues) => login(command),
     onSuccess: (session) => {
       acceptSession(session);
-      void navigate(ROUTES.HOME, { replace: true });
+      void navigate(postAuthRedirect, { replace: true });
     },
   });
 

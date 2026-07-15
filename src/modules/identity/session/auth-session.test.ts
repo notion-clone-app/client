@@ -12,9 +12,9 @@ describe("auth session", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-15T10:00:00Z"));
 
-    const session = mapAuthSessionDto({ accessExpiresIn: 60 });
+    const session = mapAuthSessionDto({ accessExpiresAt: 1_768_471_260 });
 
-    expect(session).toEqual({ accessExpiresAt: Date.now() + 60_000 });
+    expect(session).toEqual({ accessExpiresAt: 1_768_471_260_000 });
     expect(session).not.toHaveProperty("accessToken");
     expect(session).not.toHaveProperty("refreshToken");
   });

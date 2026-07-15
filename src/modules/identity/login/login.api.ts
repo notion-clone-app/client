@@ -5,12 +5,14 @@ import { mapAuthSessionDto, type AuthSessionDto } from "../session/auth-session.
 import { LoginError, type LoginCommand } from "./login.contracts";
 
 type ErrorResponseDto = { message?: string };
+type LoginRequestDto = LoginCommand & { appId: number };
 
 export async function login(command: LoginCommand, signal?: AbortSignal): Promise<AuthSession> {
   try {
+    const body: LoginRequestDto = { ...command, appId: 1 };
     const dto = await httpClient<AuthSessionDto>("/v1/auth/login", {
       method: "POST",
-      body: command,
+      body,
       signal: signal ?? null,
       auth: "none",
     });

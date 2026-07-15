@@ -5,15 +5,30 @@ import { mapAuthSessionDto, type AuthSessionDto } from "../session/auth-session.
 import { RegistrationError, type RegistrationCommand } from "./registration.contracts";
 
 type ErrorResponseDto = { code?: string; message?: string };
+type RegistrationRequestDto = {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  appId: number;
+};
 
 export async function register(
   command: RegistrationCommand,
   signal?: AbortSignal,
 ): Promise<AuthSession> {
   try {
+    // TODO: configure app id from constants/env
+    const body: RegistrationRequestDto = {
+      email: command.email,
+      password: command.password,
+      firstName: command.name,
+      lastName: command.lastName,
+      appId: 1,
+    };
     const dto = await httpClient<AuthSessionDto>("/v1/auth/register", {
       method: "POST",
-      body: command,
+      body,
       signal: signal ?? null,
       auth: "none",
     });

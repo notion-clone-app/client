@@ -8,10 +8,10 @@ session before the access cookie expires.
 
 Recommended production attributes:
 
-| Cookie                   | Purpose                | Suggested attributes                                        |
-| ------------------------ | ---------------------- | ----------------------------------------------------------- |
-| `__Secure-access_token`  | Short-lived API access | `HttpOnly; Secure; SameSite=Lax; Path=/api`                 |
-| `__Secure-refresh_token` | Session renewal        | `HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth/refresh` |
+| Cookie          | Purpose                | Suggested attributes                                    |
+| --------------- | ---------------------- | ------------------------------------------------------- |
+| `access_token`  | Short-lived API access | `HttpOnly; Secure; SameSite=Lax; Path=/`                |
+| `refresh_token` | Session renewal        | `HttpOnly; Secure; SameSite=Lax; Path=/v1/auth/refresh` |
 
 `SameSite=Strict` is preferable when external SSO redirects and cross-site entry flows are not
 required. Cookie `Path` reduces where a cookie is sent, but is not an authorization boundary.
@@ -26,7 +26,7 @@ Login and registration set both cookies and return only expiration metadata:
 
 ```json
 {
-  "accessExpiresIn": 900
+  "accessExpiresAt": 1784145600
 }
 ```
 
@@ -34,19 +34,27 @@ Login and registration set both cookies and return only expiration metadata:
 - `POST /v1/auth/register`
 - `POST /v1/auth/refresh` — rotates refresh and access cookies and returns the same DTO
 - `POST /v1/auth/logout` — revokes the session and expires both cookies
+- `GET /v1/auth/me` — validates the access cookie and returns the current user plus access expiration
 
-The client calculates `accessExpiresAt = Date.now() + accessExpiresIn * 1000`. This value is not a
-security decision: the backend remains responsible for validating token expiration and revocation.
+The API returns Unix timestamps in seconds. The client converts them to milliseconds for browser
+timers. This value is not a security decision: the backend remains responsible for validating token
+expiration and revocation.
 
 ## Client request flow
 
 1. `ofetch` uses `credentials: "include"`; the browser attaches matching cookies automatically.
 2. Public identity endpoints use `auth: "none"` and never start refresh recovery.
-3. A required request refreshes proactively 30 seconds before `accessExpiresAt`.
-4. Concurrent refresh attempts share one promise.
-5. After a `401`, the client refreshes once and retries the original request once.
-6. A failed recovery clears only in-memory session metadata and lets the auth guard redirect.
-7. A `403` does not refresh the session: it means the authenticated principal lacks permission.
+3. On page bootstrap, `/me` validates an existing access cookie without rotating tokens.
+4. If `/me` returns `401`, the client refreshes once and retries `/me`.
+5. While the app is open, the client may refresh 30 seconds before `accessExpiresAt`.
+6. Concurrent refresh attempts share one promise.
+7. After a protected request returns `401`, the client refreshes once and retries it once.
+8. A failed recovery clears only in-memory session metadata and lets the auth guard redirect.
+9. A `403` does not refresh the session: it means the authenticated principal lacks permission.
+
+Auth requirements are declared per RPC through proto method options: public, access-token, or
+refresh-token authentication. The policy message already reserves `workspace_permissions` for
+future workspace authorization without coupling it to the current authentication implementation.
 
 There is intentionally no `Authorization` interceptor. An `HttpOnly` token cannot be read by
 JavaScript, so it cannot be copied into a request header.
