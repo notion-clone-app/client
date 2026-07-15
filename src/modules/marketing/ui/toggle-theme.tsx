@@ -2,7 +2,11 @@ import { useTheme } from "@/shared/theme";
 import { Button } from "@/shared/ui/kit/button";
 import { Sun, Moon } from "lucide-react";
 
-export function ToggleTheme() {
+type ToggleThemeProps = {
+  surface?: "default" | "media";
+};
+
+export function ToggleTheme({ surface = "default" }: ToggleThemeProps) {
   const { theme, setTheme } = useTheme();
 
   const toggleTheme = () => {
@@ -10,7 +14,12 @@ export function ToggleTheme() {
   };
 
   return (
-    <Button variant="secondary" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
+    <Button
+      variant={surface === "media" ? "on-media-ghost" : "secondary"}
+      size="icon"
+      onClick={toggleTheme}
+      aria-label="Toggle theme"
+    >
       {/* Иконка солнца показывается в светлой теме */}
       <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
       {/* Иконка луны показывается в темной теме */}

@@ -37,6 +37,11 @@ export const Input: FC<Props> = ({
         className={cn(
           "h-9 w-full min-w-0 rounded-xl border border-input bg-card px-3 py-1.5 text-sm text-foreground shadow-input transition-[border-color,box-shadow,background-color] outline-none placeholder:text-muted-foreground/80 hover:border-foreground/25 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:opacity-70 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/15",
           "file:mr-3 file:border-0 file:bg-transparent file:text-sm file:font-medium",
+
+          "autofill:shadow-[inset_0_0_0_1000px_var(--color-card)]", // autofill state background
+          "autofill:[-webkit-text-fill-color:var(--color-foreground)]", // autofill text color
+          "autofill:transition-[background-color] autofill:delay-0 autofill:duration-[9999s]", // freeze autofill state
+
           { "border-destructive ring-2 ring-destructive/15": hasErrors },
           className,
         )}

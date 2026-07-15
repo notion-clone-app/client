@@ -3,7 +3,7 @@ import { ROUTES } from "@/shared/model";
 import { useTranslation } from "@/shared/model/localization";
 import { Button } from "@/shared/ui/kit/button";
 import { ExternalLink } from "lucide-react";
-import type { FC, ReactNode } from "react";
+import { useEffect, useState, type FC, type ReactNode } from "react";
 import { Link } from "react-router";
 import { Logo } from "../../logo";
 import { PickLanguageDropdown } from "../../pick-language-dropdown";
@@ -15,7 +15,7 @@ const NavLink: FC<{ children: ReactNode }> = ({ children }) => (
   <Button
     variant="link"
     className={cn(
-      "h-auto p-0 text-sm font-medium text-[inherit] transition-colors hover:text-[inherit] hover:opacity-70",
+      "h-auto p-0 text-sm font-medium text-[inherit] hover:text-[inherit] hover:opacity-70",
     )}
     asChild
   >
@@ -23,10 +23,32 @@ const NavLink: FC<{ children: ReactNode }> = ({ children }) => (
   </Button>
 );
 
-export const LandingHeader: FC = () => {
+type LandingHeaderProps = {
+  surface?: "default" | "media";
+};
+
+export const LandingHeader: FC<LandingHeaderProps> = ({ surface = "default" }) => {
   const { t } = useTranslation();
   const { currentScrollOffsetY } = useWindowScroll();
   const isScrolled = currentScrollOffsetY > 20;
+  const [isMediaVisible, setIsMediaVisible] = useState(surface === "media");
+  const isOnMedia = surface === "media" && isMediaVisible;
+
+  useEffect(() => {
+    if (surface !== "media") return;
+
+    const mediaSurface = document.querySelector('[data-header-surface="media"]');
+    if (!mediaSurface) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsMediaVisible(Boolean(entry?.isIntersecting));
+      },
+      { rootMargin: "-64px 0px 0px" },
+    );
+    observer.observe(mediaSurface);
+    return () => observer.disconnect();
+  }, [surface]);
 
   return (
     <header
@@ -34,7 +56,9 @@ export const LandingHeader: FC = () => {
         "fixed top-0 left-0 z-20 flex h-16 w-full items-center transition-all duration-300",
         isScrolled
           ? "border-b border-border bg-background/90 text-foreground shadow-xs backdrop-blur-xl"
-          : "border-transparent bg-transparent text-foreground",
+          : isOnMedia
+            ? "border-transparent bg-transparent text-media-foreground"
+            : "border-transparent bg-transparent text-foreground",
       )}
     >
       <LandingContainer>
@@ -77,16 +101,21 @@ export const LandingHeader: FC = () => {
 
           <div className="flex items-center gap-4">
             <div className="hidden items-center gap-2 md:flex">
-              <Button variant="secondary" asChild>
+              <Button variant={isOnMedia ? "on-media-ghost" : "secondary"} asChild>
                 <Link to={ROUTES.LOGIN}>{t("landing:header.actions.login")}</Link>
               </Button>
-              <Button asChild>
+              <Button variant={isOnMedia ? "on-media" : "default"} asChild>
                 <Link to={ROUTES.REGISTRATION}>{t("landing:header.actions.registration")}</Link>
               </Button>
             </div>
-            <div className={cn("flex items-center gap-2 border-l pl-4", "border-border")}>
-              <PickLanguageDropdown />
-              <ToggleTheme />
+            <div
+              className={cn(
+                "flex items-center gap-2 border-l pl-4",
+                isOnMedia ? "border-media-border" : "border-border",
+              )}
+            >
+              <PickLanguageDropdown surface={isOnMedia ? "media" : "default"} />
+              <ToggleTheme surface={isOnMedia ? "media" : "default"} />
             </div>
           </div>
         </div>

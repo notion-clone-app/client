@@ -13,7 +13,11 @@ const languages = [
   { code: "ru", label: "Ru" },
 ] as const;
 
-export function PickLanguageDropdown() {
+type PickLanguageDropdownProps = {
+  surface?: "default" | "media";
+};
+
+export function PickLanguageDropdown({ surface = "default" }: PickLanguageDropdownProps) {
   const { i18n } = useTranslation();
   const currentLang = i18n.resolvedLanguage ?? "en";
 
@@ -24,7 +28,7 @@ export function PickLanguageDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="secondary">
+        <Button variant={surface === "media" ? "on-media-ghost" : "secondary"}>
           <Globe className="size-4" />
           <span className="text-xs uppercase">{currentLang}</span>
         </Button>

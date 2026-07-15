@@ -26,7 +26,7 @@
   animation: marquee-right linear infinite;
 }
 
-/* Остановка при наведении */
+/* Pause on hover  */
 .marquee-parent:hover .animate-marquee-left,
 .marquee-parent:hover .animate-marquee-right {
   animation-play-state: paused;
