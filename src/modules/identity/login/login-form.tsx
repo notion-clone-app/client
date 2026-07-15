@@ -10,13 +10,14 @@ export function LoginForm() {
   const passwordError = form.formState.errors.password?.message;
 
   return (
-    <form className="grid gap-4" noValidate onSubmit={submit}>
+    <form className="grid gap-3" noValidate onSubmit={submit}>
       <Input
         {...form.register("email")}
         type="email"
         autoComplete="email"
-        placeholder="name@example.com"
-        labelContent="Email"
+        placeholder="Адрес электронной почты"
+        aria-label="Адрес электронной почты"
+        className="h-[54px] rounded-2xl bg-background px-5 text-base shadow-none"
         hasErrors={Boolean(emailError)}
         messages={emailError}
       />
@@ -25,15 +26,16 @@ export function LoginForm() {
         type="password"
         autoComplete="current-password"
         placeholder="Пароль"
-        labelContent="Пароль"
+        aria-label="Пароль"
+        className="h-[54px] rounded-2xl bg-background px-5 text-base shadow-none"
         hasErrors={Boolean(passwordError)}
         messages={passwordError}
       />
-      <Button className="mt-2 w-full" disabled={isSubmitting} type="submit">
+      <Button className="mt-1 h-[52px] w-full rounded-2xl text-base" disabled={isSubmitting} type="submit">
         {isSubmitting ? "Входим…" : "Войти"}
       </Button>
-      <p className="text-center text-sm text-muted-foreground">
-        Нет аккаунта? <Link className="font-medium text-foreground hover:underline" to={ROUTES.REGISTRATION}>Зарегистрироваться</Link>
+      <p className="mt-2 text-center text-sm text-muted-foreground">
+        Нет аккаунта? <Link className="font-medium text-foreground underline-offset-4 hover:underline" to={ROUTES.REGISTRATION}>Зарегистрироваться</Link>
       </p>
     </form>
   );

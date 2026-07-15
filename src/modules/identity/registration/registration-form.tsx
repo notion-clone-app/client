@@ -9,12 +9,13 @@ export function RegistrationForm() {
   const errors = form.formState.errors;
 
   return (
-    <form className="grid gap-4" noValidate onSubmit={submit}>
+    <form className="grid gap-3" noValidate onSubmit={submit}>
       <Input
         {...form.register("name")}
         autoComplete="name"
-        placeholder="Ваше имя"
-        labelContent="Имя"
+        placeholder="Имя"
+        aria-label="Имя"
+        className="h-[54px] rounded-2xl bg-background px-5 text-base shadow-none"
         hasErrors={Boolean(errors.name)}
         messages={errors.name?.message}
       />
@@ -22,8 +23,9 @@ export function RegistrationForm() {
         {...form.register("email")}
         type="email"
         autoComplete="email"
-        placeholder="name@example.com"
-        labelContent="Email"
+        placeholder="Адрес электронной почты"
+        aria-label="Адрес электронной почты"
+        className="h-[54px] rounded-2xl bg-background px-5 text-base shadow-none"
         hasErrors={Boolean(errors.email)}
         messages={errors.email?.message}
       />
@@ -31,8 +33,9 @@ export function RegistrationForm() {
         {...form.register("password")}
         type="password"
         autoComplete="new-password"
-        placeholder="Минимум 8 символов"
-        labelContent="Пароль"
+        placeholder="Пароль"
+        aria-label="Пароль"
+        className="h-[54px] rounded-2xl bg-background px-5 text-base shadow-none"
         hasErrors={Boolean(errors.password)}
         messages={errors.password?.message}
       />
@@ -41,7 +44,8 @@ export function RegistrationForm() {
         type="password"
         autoComplete="new-password"
         placeholder="Повторите пароль"
-        labelContent="Повторите пароль"
+        aria-label="Повторите пароль"
+        className="h-[54px] rounded-2xl bg-background px-5 text-base shadow-none"
         hasErrors={Boolean(errors.passwordConfirmation)}
         messages={errors.passwordConfirmation?.message}
       />
@@ -50,11 +54,11 @@ export function RegistrationForm() {
           {formError}
         </p>
       )}
-      <Button className="mt-2 w-full" disabled={isSubmitting} type="submit">
+      <Button className="mt-1 h-[52px] w-full rounded-2xl text-base" disabled={isSubmitting} type="submit">
         {isSubmitting ? "Создаём аккаунт…" : "Зарегистрироваться"}
       </Button>
-      <p className="text-center text-sm text-muted-foreground">
-        Уже есть аккаунт? <Link className="font-medium text-foreground hover:underline" to={ROUTES.LOGIN}>Войти</Link>
+      <p className="mt-2 text-center text-sm text-muted-foreground">
+        Уже есть аккаунт? <Link className="font-medium text-foreground underline-offset-4 hover:underline" to={ROUTES.LOGIN}>Войти</Link>
       </p>
     </form>
   );
