@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const registrationFormSchema = z.object({
   name: z.string().trim().min(2, "Введите минимум 2 символа"),
+  lastName: z.string().trim().min(2, "Введите минимум 2 символа"),
   email: z.email("Введите корректный email"),
   password: z
     .string()

@@ -5,7 +5,7 @@ import { Input } from "@/shared/ui/kit/input";
 import { useRegistrationForm } from "./use-registration-form";
 
 export function RegistrationForm() {
-  const { form, formError, isSubmitting, submit } = useRegistrationForm();
+  const { form, isSubmitting, submit } = useRegistrationForm();
   const errors = form.formState.errors;
 
   return (
@@ -18,6 +18,15 @@ export function RegistrationForm() {
         className="h-[54px] rounded-2xl bg-background px-5 text-base shadow-none"
         hasErrors={Boolean(errors.name)}
         messages={errors.name?.message}
+      />
+      <Input
+        {...form.register("lastName")}
+        autoComplete="family-name"
+        placeholder="Фамилия"
+        aria-label="Фамилия"
+        className="h-[54px] rounded-2xl bg-background px-5 text-base shadow-none"
+        hasErrors={Boolean(errors.lastName)}
+        messages={errors.lastName?.message}
       />
       <Input
         {...form.register("email")}
@@ -49,11 +58,6 @@ export function RegistrationForm() {
         hasErrors={Boolean(errors.passwordConfirmation)}
         messages={errors.passwordConfirmation?.message}
       />
-      {formError && (
-        <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {formError}
-        </p>
-      )}
       <Button className="mt-1 h-[52px] w-full rounded-2xl text-base" disabled={isSubmitting} type="submit">
         {isSubmitting ? "Создаём аккаунт…" : "Зарегистрироваться"}
       </Button>
