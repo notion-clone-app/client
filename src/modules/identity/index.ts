@@ -4,3 +4,8 @@ export { RegistrationForm } from "./registration/registration-form";
 export { authSession, type AuthSession } from "./session/auth-session";
 export { IdentityProvider } from "./session/identity.provider";
 export { RequireAuth } from "./require-auth";
+export { RequireGuest } from "./require-guest";
+export { useCurrentUser } from "./current-user/use-current-user.hook";
+export { logoutSession } from "./session/session-manager";
+export { useLogout } from "./logout/use-logout.hook";
+export type { CurrentUser } from "./current-user/current-user.entity";

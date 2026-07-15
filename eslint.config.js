@@ -46,7 +46,7 @@ export default defineConfig([
   {
     files: ["src/modules/**/*.{ts,tsx}"],
     rules: {
-      "no-restricted-imports": ["error", { patterns: ["@/app/*", "@/modules/*"] }],
+      "no-restricted-imports": ["error", { patterns: ["@/app/*", "@/modules/*/*"] }],
     },
   },
   {

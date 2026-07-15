@@ -1,6 +1,6 @@
 import type { FC } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router";
-import { AccessDeniedPage, RequireAuth } from "@/modules/identity";
+import { AccessDeniedPage, RequireAuth, RequireGuest } from "@/modules/identity";
 import { ROUTES } from "@/shared/model";
 import { NotFoundPage } from "./not-found.page";
 import { RouteErrorPage } from "./route-error.page";
@@ -29,12 +29,17 @@ const routerConfig = createBrowserRouter([
         lazy: () => import("@/modules/marketing/requirements.page"),
       },
       {
-        path: ROUTES.LOGIN,
-        lazy: () => import("@/modules/identity/login/login.page"),
-      },
-      {
-        path: ROUTES.REGISTRATION,
-        lazy: () => import("@/modules/identity/registration/registration.page"),
+        Component: RequireGuest,
+        children: [
+          {
+            path: ROUTES.LOGIN,
+            lazy: () => import("@/modules/identity/login/login.page"),
+          },
+          {
+            path: ROUTES.REGISTRATION,
+            lazy: () => import("@/modules/identity/registration/registration.page"),
+          },
+        ],
       },
       {
         path: ROUTES.FORBIDDEN,
@@ -46,6 +51,10 @@ const routerConfig = createBrowserRouter([
           {
             path: ROUTES.APP,
             lazy: () => import("@/modules/documents/document.page"),
+          },
+          {
+            path: ROUTES.WORKSPACE,
+            lazy: () => import("@/modules/workspace/dashboard.page"),
           },
         ],
       },

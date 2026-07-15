@@ -1,11 +1,11 @@
 import type { AuthSession } from "./auth-session";
 
 export type AuthSessionDto = {
-  accessExpiresIn: number;
+  accessExpiresAt: number;
 };
 
 export function mapAuthSessionDto(dto: AuthSessionDto): AuthSession {
   return {
-    accessExpiresAt: Date.now() + dto.accessExpiresIn * 1_000,
+    accessExpiresAt: dto.accessExpiresAt * 1_000,
   };
 }

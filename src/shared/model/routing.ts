@@ -5,6 +5,7 @@ export const ROUTES = {
   ARCHITECTURE: "/architecture",
   BUSINESS_REQUIREMENTS: "/requirements",
   APP: "/app",
+  WORKSPACE: "/workspace",
   LOGIN: "/login",
   REGISTRATION: "/registration",
   FORBIDDEN: "/forbidden",
