@@ -5,7 +5,7 @@ import { StackSection } from "./ui/sections/stack";
 
 const LandingPage: FC = () => {
   return (
-    <LandingLayout>
+    <LandingLayout headerSurface="media">
       <HeroSection />
       <StackSection />
     </LandingLayout>

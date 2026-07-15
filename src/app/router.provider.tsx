@@ -5,9 +5,16 @@ import { ROUTES } from "@/shared/model";
 import { NotFoundPage } from "./not-found.page";
 import { RouteErrorPage } from "./route-error.page";
 
+const RouterFallback = () => (
+  <main className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+    Загружаем страницу…
+  </main>
+);
+
 const routerConfig = createBrowserRouter([
   {
     errorElement: <RouteErrorPage />,
+    HydrateFallback: RouterFallback,
     children: [
       {
         path: ROUTES.HOME,

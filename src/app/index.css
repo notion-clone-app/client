@@ -47,6 +47,10 @@
   --color-surface-hover: var(--surface-hover);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-media-foreground: var(--media-foreground);
+  --color-media-muted: var(--media-muted);
+  --color-media-surface: var(--media-surface);
+  --color-media-border: var(--media-border);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -103,6 +107,10 @@
   --surface-hover: #e8e8e4;
   --success: #3f7d55;
   --warning: #9a681e;
+  --media-foreground: #11110f;
+  --media-muted: rgb(17 17 15 / 0.68);
+  --media-surface: rgb(255 255 255 / 0.24);
+  --media-border: rgb(17 17 15 / 0.18);
   --input-shadow: 0 1px 2px rgb(28 28 26 / 0.04), inset 0 0 0 1px rgb(255 255 255 / 0.3);
   --button-shadow: 0 1px 2px rgb(28 28 26 / 0.16), inset 0 1px 0 rgb(255 255 255 / 0.12);
   --card-shadow: 0 1px 2px rgb(28 28 26 / 0.04), 0 8px 24px rgb(28 28 26 / 0.05);
