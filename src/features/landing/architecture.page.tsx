@@ -1,15 +1,13 @@
 import type { FC } from "react"
 import { LandingLayout } from "./ui/layout/landing.layout"
-import { LandingContainer } from "./ui"
+import { ArchitectureHero } from "./ui/sections/architecture-hero"
 
 const ArchitecturePage: FC = () => {
     return (
         <LandingLayout>
-            <LandingContainer>
-                <div>
-                    Architecture
-                </div>
-            </LandingContainer>
+            <ArchitectureHero />
+            {/* <ArchitectureDiagram /> */}
+            {/* <TechnologyLayers /> */}
         </LandingLayout>
     )
 }

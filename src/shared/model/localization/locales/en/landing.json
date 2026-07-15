@@ -18,5 +18,9 @@
             "cta": "Try it now",
             "github": "View on GitHub"
         }
+    },
+    "stack": {
+        "title": "Tech stack",
+        "description": "All the technologies used in the project, from the interface to the backend"
     }
 }
