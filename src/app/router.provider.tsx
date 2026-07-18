@@ -49,12 +49,18 @@ const routerConfig = createBrowserRouter([
         Component: RequireAuth,
         children: [
           {
-            path: ROUTES.APP,
-            lazy: () => import("@/modules/documents/document.page"),
-          },
-          {
             path: ROUTES.WORKSPACE,
-            lazy: () => import("@/modules/workspace/dashboard.page"),
+            lazy: () => import("@/modules/workspace/workspace.page"),
+            children: [
+              {
+                index: true,
+                lazy: () => import("@/modules/workspace/dashboard.page"),
+              },
+              {
+                path: "documents/:documentId",
+                lazy: () => import("@/modules/workspace/document.page"),
+              },
+            ],
           },
         ],
       },

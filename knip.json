@@ -2,7 +2,6 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "project": ["src/**/*.{ts,tsx}"],
   "ignore": [
-    "src/modules/documents/**",
     "src/modules/marketing/index.ts",
     "src/modules/marketing/ui/layout/footer-links.tsx",
     "src/modules/marketing/ui/sections/technology-layers.tsx",

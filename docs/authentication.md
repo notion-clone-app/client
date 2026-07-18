@@ -1,8 +1,8 @@
 # Authentication contract
 
 The browser uses cookie-based authentication. JavaScript never receives or stores access and
-refresh token values. The client keeps only non-secret expiration metadata so it can refresh the
-session before the access cookie expires.
+refresh token values. The authenticated viewer and non-secret access expiration are cached as one
+TanStack Query session.
 
 ## Cookies owned by the backend
 
@@ -36,21 +36,22 @@ Login and registration set both cookies and return only expiration metadata:
 - `POST /v1/auth/logout` — revokes the session and expires both cookies
 - `GET /v1/auth/me` — validates the access cookie and returns the current user plus access expiration
 
-The API returns Unix timestamps in seconds. The client converts them to milliseconds for browser
-timers. This value is not a security decision: the backend remains responsible for validating token
-expiration and revocation.
+The API returns Unix timestamps in seconds. The client converts them to milliseconds and keeps the
+value as non-secret session metadata. It does not schedule proactive refreshes from this value: the
+backend remains responsible for validating token expiration and revocation.
 
 ## Client request flow
 
 1. `ofetch` uses `credentials: "include"`; the browser attaches matching cookies automatically.
 2. Public identity endpoints use `auth: "none"` and never start refresh recovery.
-3. On page bootstrap, `/me` validates an existing access cookie without rotating tokens.
-4. If `/me` returns `401`, the client refreshes once and retries `/me`.
-5. While the app is open, the client may refresh 30 seconds before `accessExpiresAt`.
-6. Concurrent refresh attempts share one promise.
-7. After a protected request returns `401`, the client refreshes once and retries it once.
-8. A failed recovery clears only in-memory session metadata and lets the auth guard redirect.
-9. A `403` does not refresh the session: it means the authenticated principal lacks permission.
+3. The session query calls `/me` to validate an existing access cookie without rotating tokens.
+4. A protected request that returns `401` starts one shared refresh request.
+5. Concurrent failed requests wait for the same refresh promise.
+6. After successful refresh, each original request is retried once.
+7. Failed refresh stores `null` in the session query and lets the auth guard redirect.
+8. Login and registration force a new `/me` request after the backend installs cookies.
+9. Logout clears the session query after the backend revokes the session and expires both cookies.
+10. A `403` does not refresh the session: it means the authenticated principal lacks permission.
 
 Auth requirements are declared per RPC through proto method options: public, access-token, or
 refresh-token authentication. The policy message already reserves `workspace_permissions` for

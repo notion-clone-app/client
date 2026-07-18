@@ -1,11 +1,11 @@
 import { Navigate, Outlet } from "react-router";
 import { ROUTES } from "@/shared/model";
-import { useAuthSession } from "./session/use-auth-session.hook";
+import { useSession } from "./session/use-session.hook";
 
 export function RequireGuest() {
-  const auth = useAuthSession();
+  const session = useSession();
 
-  if (auth.status === "unknown") {
+  if (session.isPending) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
         Проверяем сессию…
@@ -13,7 +13,15 @@ export function RequireGuest() {
     );
   }
 
-  if (auth.status === "authenticated") {
+  if (session.isError) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background text-sm text-destructive">
+        Не удалось проверить сессию
+      </main>
+    );
+  }
+
+  if (session.data) {
     return <Navigate to={ROUTES.WORKSPACE} replace />;
   }
 

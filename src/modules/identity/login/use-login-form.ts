@@ -1,9 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
-import { acceptSession } from "../session/session-manager";
+import { reloadSession } from "../session/session.query";
 import { usePostAuthRedirect } from "../use-post-auth-redirect.hook";
 import { login } from "./login.api";
 import { LoginError } from "./login.contracts";
@@ -11,6 +11,7 @@ import { loginFormSchema, type LoginFormValues } from "./login-form.schema";
 
 export function useLoginForm() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const postAuthRedirect = usePostAuthRedirect();
   const [formError, setFormError] = useState("");
   const form = useForm<LoginFormValues>({
@@ -20,8 +21,9 @@ export function useLoginForm() {
   const mutation = useMutation({
     mutationKey: ["identity", "login"],
     mutationFn: (command: LoginFormValues) => login(command),
-    onSuccess: (session) => {
-      acceptSession(session);
+    onSuccess: async () => {
+      const session = await reloadSession(queryClient);
+      if (!session) throw new LoginError("Сессия не была создана", "unknown");
       void navigate(postAuthRedirect, { replace: true });
     },
   });

@@ -1,9 +1,8 @@
 import { FetchError, ofetch, type FetchOptions, type FetchRequest } from "ofetch";
 
-export type AuthMode = "none" | "optional" | "required";
+type AuthMode = "none" | "required";
 
 export type HttpAuthMiddleware = Readonly<{
-  prepare: (mode: Exclude<AuthMode, "none">) => Promise<void>;
   recoverUnauthorized: () => Promise<boolean>;
 }>;
 
@@ -30,8 +29,6 @@ export function configureHttpAuth(middleware: HttpAuthMiddleware): () => void {
 
 export async function httpClient<T>(request: FetchRequest, options: HttpOptions = {}): Promise<T> {
   const { auth = "required", ...fetchOptions } = options;
-
-  if (auth !== "none") await authMiddleware?.prepare(auth);
 
   try {
     return await transport<T>(request, fetchOptions);
