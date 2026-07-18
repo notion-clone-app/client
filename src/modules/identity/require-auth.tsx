@@ -1,12 +1,12 @@
 import { Navigate, Outlet, useLocation } from "react-router";
 import { ROUTES } from "@/shared/model";
-import { useAuthSession } from "./session/use-auth-session.hook";
+import { useSession } from "./session/use-session.hook";
 
 export function RequireAuth() {
-  const auth = useAuthSession();
+  const session = useSession();
   const location = useLocation();
 
-  if (auth.status === "unknown") {
+  if (session.isPending) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
         Проверяем сессию…
@@ -14,7 +14,15 @@ export function RequireAuth() {
     );
   }
 
-  if (auth.status === "anonymous") {
+  if (session.isError) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background text-sm text-destructive">
+        Не удалось проверить сессию
+      </main>
+    );
+  }
+
+  if (!session.data) {
     return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
   }
 

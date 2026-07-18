@@ -1,4 +1,4 @@
-export type CurrentUser = Readonly<{
+export type Viewer = Readonly<{
   id: string;
   email: string;
   firstName: string;

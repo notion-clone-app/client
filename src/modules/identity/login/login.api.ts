@@ -1,22 +1,19 @@
 import { FetchError } from "ofetch";
 import { httpClient } from "@/shared/api/http-client";
-import type { AuthSession } from "../session/auth-session";
-import { mapAuthSessionDto, type AuthSessionDto } from "../session/auth-session.dto";
 import { LoginError, type LoginCommand } from "./login.contracts";
 
 type ErrorResponseDto = { message?: string };
 type LoginRequestDto = LoginCommand & { appId: number };
 
-export async function login(command: LoginCommand, signal?: AbortSignal): Promise<AuthSession> {
+export async function login(command: LoginCommand, signal?: AbortSignal): Promise<void> {
   try {
     const body: LoginRequestDto = { ...command, appId: 1 };
-    const dto = await httpClient<AuthSessionDto>("/v1/auth/login", {
+    await httpClient("/v1/auth/login", {
       method: "POST",
       body,
       signal: signal ?? null,
       auth: "none",
     });
-    return mapAuthSessionDto(dto);
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
     if (!(error instanceof FetchError) || !error.response) {

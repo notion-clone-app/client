@@ -1,7 +1,5 @@
 import { FetchError } from "ofetch";
 import { httpClient } from "@/shared/api/http-client";
-import type { AuthSession } from "../session/auth-session";
-import { mapAuthSessionDto, type AuthSessionDto } from "../session/auth-session.dto";
 import { RegistrationError, type RegistrationCommand } from "./registration.contracts";
 
 type ErrorResponseDto = { code?: string; message?: string };
@@ -13,10 +11,7 @@ type RegistrationRequestDto = {
   appId: number;
 };
 
-export async function register(
-  command: RegistrationCommand,
-  signal?: AbortSignal,
-): Promise<AuthSession> {
+export async function register(command: RegistrationCommand, signal?: AbortSignal): Promise<void> {
   try {
     // TODO: configure app id from constants/env
     const body: RegistrationRequestDto = {
@@ -26,14 +21,12 @@ export async function register(
       lastName: command.lastName,
       appId: 1,
     };
-    const dto = await httpClient<AuthSessionDto>("/v1/auth/register", {
+    await httpClient("/v1/auth/register", {
       method: "POST",
       body,
       signal: signal ?? null,
       auth: "none",
     });
-
-    return mapAuthSessionDto(dto);
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
     if (!(error instanceof FetchError) || !error.response) {
