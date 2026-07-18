@@ -4,11 +4,9 @@ export {
   parseMarkdownList,
   parseMarkdownParagraph,
 } from "./markdown/markdown-block";
+export { serializeBlocksToMarkdown } from "./markdown/serialize-document";
 export { blockRegistry } from "./registry/block.registry";
-export { createEmptyDocument } from "./model/create-empty-document";
-export { listLocalDocuments, saveLocalDocument } from "./persistence/local-document.repository";
-export { DocumentEditor } from "./ui/document-editor";
-export { ReadonlyDocument } from "./ui/readonly-document";
+export { BlockEditor } from "./ui/block-editor";
 export type {
   DocumentBlock,
   HeadingBlock,
@@ -16,5 +14,4 @@ export type {
   ListBlock,
   ParagraphBlock,
 } from "./model/document-block";
-export type { DocumentMetadata, EditorDocument } from "./model/editor-document";
 export type { ParsedMarkdownHeading } from "./markdown/markdown-heading";

@@ -1,18 +1,19 @@
-import type { EditorDocument } from "./editor-document";
+import type { WorkspaceDocumentContent } from "./workspace-document-content.entity";
 
-type CreateEmptyDocumentOptions = Readonly<{
+type CreateEmptyWorkspaceDocumentOptions = Readonly<{
   id?: string;
   workspaceId: string;
   authorId: string;
   now?: string;
 }>;
 
-export function createEmptyDocument({
+/** Creates a new document aggregate with the first editable paragraph. */
+export function createEmptyWorkspaceDocument({
   id = crypto.randomUUID(),
   workspaceId,
   authorId,
   now = new Date().toISOString(),
-}: CreateEmptyDocumentOptions): EditorDocument {
+}: CreateEmptyWorkspaceDocumentOptions): WorkspaceDocumentContent {
   return {
     schemaVersion: 1,
     id,

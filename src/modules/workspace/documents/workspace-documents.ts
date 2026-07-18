@@ -1,6 +1,7 @@
-import type { WorkspaceDocument } from "./workspace-document.entity";
+import type { WorkspaceDocument } from "./model/workspace-document.entity";
 
-export const workspaceDocuments: readonly WorkspaceDocument[] = [
+/** Temporary navigation seed used until workspace documents come from the API. */
+export const demoWorkspaceDocuments: readonly WorkspaceDocument[] = [
   {
     id: "product",
     title: "Product notes",
@@ -22,6 +23,7 @@ export const workspaceDocuments: readonly WorkspaceDocument[] = [
   { id: "ideas", title: "Ideas canvas", type: "draw-board" },
 ];
 
+/** Finds a document node recursively in the workspace navigation tree. */
 export function findWorkspaceDocument(
   documents: readonly WorkspaceDocument[],
   documentId: string,

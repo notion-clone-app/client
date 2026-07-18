@@ -28,6 +28,7 @@ export function EditableParagraphBlock({
   block,
   onChange,
   onInsertAfter,
+  onTextSelectionChange,
 }: EditableBlockRendererProps) {
   if (block.type !== "paragraph") return null;
 
@@ -44,6 +45,12 @@ export function EditableParagraphBlock({
         block.options.italic && "italic",
       )}
       onChange={(event) => onChange({ ...block, content: event.target.value })}
+      onSelect={(event) =>
+        onTextSelectionChange(
+          block.id,
+          event.currentTarget.selectionStart !== event.currentTarget.selectionEnd,
+        )
+      }
       onKeyDown={(event) => {
         if (event.key !== "Enter" || event.shiftKey) return;
         event.preventDefault();

@@ -1,9 +1,18 @@
 import type { FC } from "react";
-import { ChevronsUpDown, Home, LogOut, Plus, Search, Settings, SquarePen } from "lucide-react";
+import {
+  ChevronsUpDown,
+  GitPullRequest,
+  Home,
+  LogOut,
+  Plus,
+  Search,
+  Settings,
+  SquarePen,
+} from "lucide-react";
 import { useLogout, type Viewer } from "@/modules/identity";
 import { Button } from "@/shared/ui/kit/button";
-import { DocumentTree } from "../documents/document-tree";
-import type { WorkspaceDocument } from "../documents/workspace-document.entity";
+import type { WorkspaceDocument } from "../documents/model/workspace-document.entity";
+import { DocumentTree } from "../documents/ui/document-tree";
 
 type Props = {
   viewer: Viewer;
@@ -12,6 +21,10 @@ type Props = {
   onSelectDocument: (document: WorkspaceDocument) => void;
   onCreateDocument: () => void;
   onOpenHome: () => void;
+  onOpenReviews: () => void;
+  onOpenSettings: () => void;
+  activeSection: "home" | "document" | "reviews" | "settings";
+  reviewCount: number;
 };
 
 export const WorkspaceSidebarContent: FC<Props> = ({
@@ -21,6 +34,10 @@ export const WorkspaceSidebarContent: FC<Props> = ({
   onSelectDocument,
   onCreateDocument,
   onOpenHome,
+  onOpenReviews,
+  onOpenSettings,
+  activeSection,
+  reviewCount,
 }) => {
   const logout = useLogout();
   const initials = `${viewer.firstName.at(0) ?? ""}${viewer.lastName.at(0) ?? ""}`.toUpperCase();
@@ -47,7 +64,7 @@ export const WorkspaceSidebarContent: FC<Props> = ({
         <button
           type="button"
           className={`flex h-8 w-full items-center gap-2 rounded-lg px-2 text-sm transition-colors ${
-            selectedDocumentId === null
+            activeSection === "home"
               ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
               : "text-sidebar-foreground/75 hover:bg-sidebar-accent/70"
           }`}
@@ -55,6 +72,23 @@ export const WorkspaceSidebarContent: FC<Props> = ({
         >
           <Home className="size-4" />
           Home
+        </button>
+        <button
+          type="button"
+          className={`flex h-8 w-full items-center gap-2 rounded-lg px-2 text-sm transition-colors ${
+            activeSection === "reviews"
+              ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+              : "text-sidebar-foreground/75 hover:bg-sidebar-accent/70"
+          }`}
+          onClick={onOpenReviews}
+        >
+          <GitPullRequest className="size-4" />
+          Reviews
+          {reviewCount > 0 && (
+            <span className="ml-auto rounded-full bg-sidebar-primary/10 px-1.5 text-[10px] font-medium text-sidebar-primary">
+              {reviewCount}
+            </span>
+          )}
         </button>
         <button
           type="button"
@@ -92,7 +126,12 @@ export const WorkspaceSidebarContent: FC<Props> = ({
       <div className="border-sidebar-gray-100 mt-3 border-t pt-2">
         <button
           type="button"
-          className="flex h-8 w-full items-center gap-2 rounded-lg px-2 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent"
+          className={`flex h-8 w-full items-center gap-2 rounded-lg px-2 text-sm ${
+            activeSection === "settings"
+              ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+              : "text-sidebar-foreground/70 hover:bg-sidebar-accent"
+          }`}
+          onClick={onOpenSettings}
         >
           <Settings className="size-4" />
           Settings

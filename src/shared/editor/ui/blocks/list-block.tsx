@@ -32,7 +32,11 @@ export function ReadonlyListBlock({ block }: ReadonlyBlockRendererProps) {
   );
 }
 
-export function EditableListBlock({ block, onChange }: EditableBlockRendererProps) {
+export function EditableListBlock({
+  block,
+  onChange,
+  onTextSelectionChange,
+}: EditableBlockRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pendingFocusItemIdRef = useRef<string | null>(null);
   const blockItems = block.type === "list" ? block.items : null;
@@ -83,6 +87,12 @@ export function EditableListBlock({ block, onChange }: EditableBlockRendererProp
             placeholder="List item"
             className="h-9 min-w-0 flex-1 bg-transparent text-base text-foreground/85 outline-none placeholder:text-muted-foreground/35"
             onChange={(event) => updateItem(item.id, event.target.value)}
+            onSelect={(event) =>
+              onTextSelectionChange(
+                block.id,
+                event.currentTarget.selectionStart !== event.currentTarget.selectionEnd,
+              )
+            }
             onKeyDown={(event) => handleKeyDown(event, index)}
           />
         </div>

@@ -1,5 +1,5 @@
 import { FileText, PenTool, type LucideIcon } from "lucide-react";
-import type { WorkspaceDocumentType } from "./workspace-document.entity";
+import type { WorkspaceDocumentType } from "../model/workspace-document.entity";
 
 type DocumentPresentation = Readonly<{
   icon: LucideIcon;

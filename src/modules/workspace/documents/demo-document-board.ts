@@ -1,19 +1,21 @@
 import {
   parseMarkdownHeading,
   type DocumentBlock,
-  type DocumentMetadata,
-  type EditorDocument,
   type HeadingBlock,
   type ListBlock,
   type ParagraphBlock,
   type ParsedMarkdownHeading,
 } from "@/shared/editor";
-import type { WorkspaceDocument } from "./workspace-document.entity";
+import type {
+  WorkspaceDocumentContent,
+  WorkspaceDocumentMetadata,
+} from "./model/workspace-document-content.entity";
+import type { WorkspaceDocument } from "./model/workspace-document.entity";
 
 const demoTimestamp = "2026-07-18T09:00:00.000Z";
 
-export function createDemoDocumentBoard(document: WorkspaceDocument): EditorDocument {
-  const metadata: DocumentMetadata = {
+export function createDemoDocumentBoard(document: WorkspaceDocument): WorkspaceDocumentContent {
+  const metadata: WorkspaceDocumentMetadata = {
     revision: 1,
     createdAt: demoTimestamp,
     updatedAt: demoTimestamp,

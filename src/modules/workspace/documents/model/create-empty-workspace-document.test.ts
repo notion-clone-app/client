@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createEmptyDocument } from "@/shared/editor";
+import { createEmptyWorkspaceDocument } from "./create-empty-workspace-document";
 
-describe("createEmptyDocument", () => {
-  it("creates an untitled local document with one empty paragraph", () => {
-    const document = createEmptyDocument({
+describe("createEmptyWorkspaceDocument", () => {
+  it("creates an untitled workspace document with one empty paragraph", () => {
+    const document = createEmptyWorkspaceDocument({
       id: "document-1",
       workspaceId: "workspace-1",
       authorId: "user-1",

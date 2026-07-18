@@ -1,36 +1,43 @@
-import type { EditorDocument } from "../model/editor-document";
+import type { WorkspaceDocumentRepository } from "../application/workspace-document.repository";
+import type { WorkspaceDocumentContent } from "../model/workspace-document-content.entity";
 
 const databaseName = "notion-local-first";
 const databaseVersion = 1;
 const documentStoreName = "documents";
-const memoryDocuments = new Map<string, EditorDocument>();
+const memoryDocuments = new Map<string, WorkspaceDocumentContent>();
 
-/** Reads locally persisted documents without requiring a network connection. */
-export async function listLocalDocuments(workspaceId: string): Promise<readonly EditorDocument[]> {
-  const database = await openDatabase();
-  if (!database) {
-    return [...memoryDocuments.values()].filter((document) => document.workspaceId === workspaceId);
-  }
+/**
+ * IndexedDB adapter for the workspace document repository port.
+ * The in-memory fallback keeps tests and environments without IndexedDB usable.
+ */
+export const indexedDbWorkspaceDocumentRepository: WorkspaceDocumentRepository = {
+  async list(workspaceId) {
+    const database = await openDatabase();
+    if (!database) {
+      return [...memoryDocuments.values()].filter(
+        (document) => document.workspaceId === workspaceId,
+      );
+    }
 
-  const documents = await requestToPromise(
-    database
-      .transaction(documentStoreName, "readonly")
-      .objectStore(documentStoreName)
-      .getAll() as IDBRequest<EditorDocument[]>,
-  );
-  return documents.filter((document) => document.workspaceId === workspaceId);
-}
+    const documents = await requestToPromise(
+      database
+        .transaction(documentStoreName, "readonly")
+        .objectStore(documentStoreName)
+        .getAll() as IDBRequest<WorkspaceDocumentContent[]>,
+    );
+    return documents.filter((document) => document.workspaceId === workspaceId);
+  },
 
-/** Writes the latest snapshot locally; callers update their UI before awaiting this operation. */
-export async function saveLocalDocument(document: EditorDocument): Promise<void> {
-  memoryDocuments.set(document.id, document);
-  const database = await openDatabase();
-  if (!database) return;
+  async save(document) {
+    memoryDocuments.set(document.id, document);
+    const database = await openDatabase();
+    if (!database) return;
 
-  const transaction = database.transaction(documentStoreName, "readwrite");
-  transaction.objectStore(documentStoreName).put(document);
-  await transactionToPromise(transaction);
-}
+    const transaction = database.transaction(documentStoreName, "readwrite");
+    transaction.objectStore(documentStoreName).put(document);
+    await transactionToPromise(transaction);
+  },
+};
 
 function openDatabase(): Promise<IDBDatabase | null> {
   if (!("indexedDB" in globalThis)) return Promise.resolve(null);

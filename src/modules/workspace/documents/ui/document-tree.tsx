@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/shared/lib/css";
+import type { WorkspaceDocument } from "../model/workspace-document.entity";
 import { getDocumentPresentation } from "./document-presentation.strategy";
-import type { WorkspaceDocument } from "./workspace-document.entity";
 
 type DocumentTreeProps = {
   documents: readonly WorkspaceDocument[];

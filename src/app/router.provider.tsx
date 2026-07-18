@@ -60,6 +60,22 @@ const routerConfig = createBrowserRouter([
                 path: "documents/:documentId",
                 lazy: () => import("@/modules/workspace/document.page"),
               },
+              {
+                path: "reviews",
+                lazy: () => import("@/modules/workspace/reviews/reviews.page"),
+              },
+              {
+                path: "reviews/new",
+                lazy: () => import("@/modules/workspace/reviews/create-review.page"),
+              },
+              {
+                path: "reviews/:reviewId",
+                lazy: () => import("@/modules/workspace/reviews/review.page"),
+              },
+              {
+                path: "settings",
+                lazy: () => import("@/modules/workspace/settings/settings.page"),
+              },
             ],
           },
         ],

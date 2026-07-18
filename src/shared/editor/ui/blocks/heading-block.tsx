@@ -37,6 +37,7 @@ export function EditableHeadingBlock({
   block,
   onChange,
   onInsertAfter,
+  onTextSelectionChange,
 }: EditableBlockRendererProps) {
   if (block.type !== "heading") return null;
 
@@ -56,6 +57,12 @@ export function EditableHeadingBlock({
         placeholder="Heading"
         className={`[field-sizing:content] w-full resize-none overflow-hidden bg-transparent leading-tight outline-none placeholder:text-muted-foreground/35 ${headingStyles[block.options.level]}`}
         onChange={(event) => onChange({ ...block, content: event.target.value })}
+        onSelect={(event) =>
+          onTextSelectionChange(
+            block.id,
+            event.currentTarget.selectionStart !== event.currentTarget.selectionEnd,
+          )
+        }
         onKeyDown={(event) => {
           if (event.key !== "Enter" || event.shiftKey) return;
           event.preventDefault();
