@@ -12,7 +12,7 @@ type DocumentTreeProps = {
 
 export function DocumentTree({ documents, selectedDocumentId, onSelect }: DocumentTreeProps) {
   return (
-    <div aria-label="Documents" role="tree" className="space-y-0.5">
+    <div aria-label="Documents" role="tree" className="space-y-1">
       {documents.map((document) => (
         <DocumentTreeItem
           key={document.id}
@@ -50,35 +50,40 @@ function DocumentTreeItem({
     >
       <div
         className={cn(
-          "group flex h-8 items-center rounded-lg pr-2 text-sm transition-colors",
+          "group flex min-h-12 items-center rounded-xl pr-3 text-base transition-colors",
           selectedDocumentId === document.id
-            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-            : "text-sidebar-foreground/75 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
+            ? "bg-muted text-foreground"
+            : "text-foreground/80 hover:bg-muted/65 hover:text-foreground",
         )}
-        style={{ paddingLeft: `${8 + depth * 14}px` }}
+        style={{ paddingLeft: `${8 + depth * 22}px` }}
       >
         <button
           type="button"
           aria-label={isExpanded ? `Collapse ${document.title}` : `Expand ${document.title}`}
           className={cn(
-            "mr-0.5 grid size-5 shrink-0 place-items-center rounded-md hover:bg-black/5 dark:hover:bg-white/5",
+            "mr-1 grid size-7 shrink-0 place-items-center rounded-md hover:bg-black/5 dark:hover:bg-white/5",
             !hasChildren && "invisible",
           )}
           onClick={() => setIsExpanded((expanded) => !expanded)}
         >
-          <ChevronRight
-            className={cn("size-3.5 transition-transform", isExpanded && "rotate-90")}
-          />
+          <ChevronRight className={cn("size-4 transition-transform", isExpanded && "rotate-90")} />
         </button>
 
         <button
           type="button"
-          className="flex min-w-0 flex-1 items-center gap-2 text-left"
-          onClick={() => onSelect(document)}
+          className="flex min-w-0 flex-1 items-center gap-3 py-2 text-left"
+          onClick={() =>
+            document.type === "folder" ? setIsExpanded((expanded) => !expanded) : onSelect(document)
+          }
           title={`${presentation.label}: ${document.title}`}
         >
-          <Icon className={cn("size-4 shrink-0", presentation.iconClassName)} />
+          <Icon className={cn("size-5 shrink-0", presentation.iconClassName)} />
           <span className="truncate">{document.title}</span>
+          {document.state === "draft" && (
+            <span className="ml-auto rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium tracking-wide text-amber-700 uppercase">
+              Draft
+            </span>
+          )}
         </button>
       </div>
 

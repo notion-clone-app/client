@@ -16,8 +16,8 @@ export type WorkspaceCollaboration = Readonly<{
   inviteMember: (email: string, role: WorkspaceMemberRole) => WorkspaceMember;
   createReview: (input: CreateDocumentReviewInput) => DocumentReview;
   approveReview: (reviewId: string, memberId: string) => void;
-  addComment: (reviewId: string, authorId: string, body: string) => void;
-  resolveComment: (reviewId: string, commentId: string) => void;
+  addComment: (reviewId: string, changeId: string, authorId: string, body: string) => void;
+  resolveComment: (reviewId: string, changeId: string, commentId: string) => void;
   publishReview: (reviewId: string) => void;
 }>;
 
@@ -51,11 +51,12 @@ const initialMembers: readonly WorkspaceMember[] = [
 const initialReviews: readonly DocumentReview[] = [
   {
     id: "review-product-notes",
-    documentId: "product",
-    documentTitle: "Product notes",
+    documentId: "release-notes-draft",
+    documentTitle: "Release notes draft",
     authorId: "demo-user",
     summary: "Clarifies the release scope and documents the decisions from the product sync.",
     target: {
+      mode: "place-new",
       boardId: "engineering",
       boardTitle: "Engineering wiki",
       path: "Product / Release notes",
@@ -66,13 +67,31 @@ const initialReviews: readonly DocumentReview[] = [
       { memberId: "member-maya", status: "approved" },
       { memberId: "member-alex", status: "pending" },
     ],
-    comments: [
+    changes: [
       {
-        id: "comment-1",
-        authorId: "member-maya",
-        body: "The release scope is clear. Could we link the rollback checklist before publishing?",
-        createdAt: "2026-07-18T12:20:00.000Z",
-        resolved: false,
+        id: "change-release-scope",
+        blockId: "release-scope",
+        kind: "updated",
+        label: "Release scope",
+        before: "The release includes the new editor.",
+        after: "The release includes the new editor and staged rollout for workspace owners.",
+        comments: [
+          {
+            id: "comment-1",
+            authorId: "member-maya",
+            body: "The scope is clear. Could we link the rollback checklist before publishing?",
+            createdAt: "2026-07-18T12:20:00.000Z",
+            resolved: false,
+          },
+        ],
+      },
+      {
+        id: "change-success-metrics",
+        blockId: "success-metrics",
+        kind: "added",
+        label: "Success metrics",
+        after: "Track activation and seven-day retention for invited workspace members.",
+        comments: [],
       },
     ],
     createdAt: "2026-07-18T11:40:00.000Z",
@@ -84,6 +103,7 @@ const initialReviews: readonly DocumentReview[] = [
     authorId: "member-alex",
     summary: "Moves accepted architecture decisions into the shared engineering knowledge base.",
     target: {
+      mode: "place-new",
       boardId: "engineering",
       boardTitle: "Engineering wiki",
       path: "Engineering / ADR",
@@ -91,7 +111,16 @@ const initialReviews: readonly DocumentReview[] = [
     },
     status: "approved",
     reviewers: [{ memberId: "member-maya", status: "approved" }],
-    comments: [],
+    changes: [
+      {
+        id: "change-adr-index",
+        blockId: "adr-index",
+        kind: "added",
+        label: "ADR index",
+        after: "Added links to accepted architecture decisions.",
+        comments: [],
+      },
+    ],
     createdAt: "2026-07-17T09:15:00.000Z",
   },
 ];
@@ -130,7 +159,11 @@ export function useMockWorkspaceCollaboration(): WorkspaceCollaboration {
       ...input,
       status: "in-review",
       reviewers: input.reviewerIds.map((memberId) => ({ memberId, status: "pending" })),
-      comments: [],
+      changes: input.changes.map((change) => ({
+        ...change,
+        id: crypto.randomUUID(),
+        comments: [],
+      })),
       createdAt: new Date().toISOString(),
     };
     setReviews((current) => [review, ...current]);
@@ -147,7 +180,7 @@ export function useMockWorkspaceCollaboration(): WorkspaceCollaboration {
         const approvals = reviewers.filter((reviewer) => reviewer.status === "approved").length;
         const commentsResolved =
           !approvalSettings.requireResolvedComments ||
-          review.comments.every((comment) => comment.resolved);
+          review.changes.every((change) => change.comments.every((comment) => comment.resolved));
         return {
           ...review,
           reviewers,
@@ -160,41 +193,61 @@ export function useMockWorkspaceCollaboration(): WorkspaceCollaboration {
     );
   };
 
-  const resolveComment = (reviewId: string, commentId: string) => {
+  const resolveComment = (reviewId: string, changeId: string, commentId: string) => {
     setReviews((current) =>
       current.map((review) => {
         if (review.id !== reviewId) return review;
-        const comments = review.comments.map((comment) =>
-          comment.id === commentId ? { ...comment, resolved: true } : comment,
+        const changes = review.changes.map((change) =>
+          change.id === changeId
+            ? {
+                ...change,
+                comments: change.comments.map((comment) =>
+                  comment.id === commentId ? { ...comment, resolved: true } : comment,
+                ),
+              }
+            : change,
         );
         const approvals = review.reviewers.filter(
           (reviewer) => reviewer.status === "approved",
         ).length;
+        const commentsResolved = changes.every((change) =>
+          change.comments.every((comment) => comment.resolved),
+        );
         return {
           ...review,
-          comments,
-          status: approvals >= approvalSettings.requiredApprovals ? "approved" : review.status,
+          changes,
+          status:
+            approvals >= approvalSettings.requiredApprovals && commentsResolved
+              ? "approved"
+              : review.status,
         };
       }),
     );
   };
 
-  const addComment = (reviewId: string, authorId: string, body: string) => {
+  const addComment = (reviewId: string, changeId: string, authorId: string, body: string) => {
     setReviews((current) =>
       current.map((review) =>
         review.id === reviewId
           ? {
               ...review,
-              comments: [
-                ...review.comments,
-                {
-                  id: crypto.randomUUID(),
-                  authorId,
-                  body,
-                  createdAt: new Date().toISOString(),
-                  resolved: false,
-                },
-              ],
+              changes: review.changes.map((change) =>
+                change.id === changeId
+                  ? {
+                      ...change,
+                      comments: [
+                        ...change.comments,
+                        {
+                          id: crypto.randomUUID(),
+                          authorId,
+                          body,
+                          createdAt: new Date().toISOString(),
+                          resolved: false,
+                        },
+                      ],
+                    }
+                  : change,
+              ),
             }
           : review,
       ),

@@ -3,40 +3,35 @@ import {
   ChevronsUpDown,
   GitPullRequest,
   Home,
+  Layers3,
   LogOut,
-  Plus,
   Search,
   Settings,
-  SquarePen,
 } from "lucide-react";
 import { useLogout, type Viewer } from "@/modules/identity";
-import { Button } from "@/shared/ui/kit/button";
-import type { WorkspaceDocument } from "../documents/model/workspace-document.entity";
-import { DocumentTree } from "../documents/ui/document-tree";
+import type { WorkspaceSubspace } from "../documents/model/workspace-document.entity";
 
 type Props = {
   viewer: Viewer;
-  documents: readonly WorkspaceDocument[];
-  selectedDocumentId: string | null;
-  onSelectDocument: (document: WorkspaceDocument) => void;
-  onCreateDocument: () => void;
+  spaces: readonly WorkspaceSubspace[];
   onOpenHome: () => void;
+  onOpenSpace: (spaceId: string) => void;
   onOpenReviews: () => void;
   onOpenSettings: () => void;
-  activeSection: "home" | "document" | "reviews" | "settings";
+  activeSection: "home" | "document" | "space" | "reviews" | "settings";
+  activeSpaceId: string | null;
   reviewCount: number;
 };
 
 export const WorkspaceSidebarContent: FC<Props> = ({
   viewer,
-  documents,
-  selectedDocumentId,
-  onSelectDocument,
-  onCreateDocument,
+  spaces,
   onOpenHome,
+  onOpenSpace,
   onOpenReviews,
   onOpenSettings,
   activeSection,
+  activeSpaceId,
   reviewCount,
 }) => {
   const logout = useLogout();
@@ -54,11 +49,6 @@ export const WorkspaceSidebarContent: FC<Props> = ({
         <span className="min-w-0 flex-1 truncate">My workspace</span>
         <ChevronsUpDown className="size-3.5 opacity-50" />
       </button>
-
-      <Button className="mt-2 w-full justify-start" size="sm" onClick={onCreateDocument}>
-        <SquarePen />
-        New document
-      </Button>
 
       <nav aria-label="Workspace" className="mt-3 space-y-0.5">
         <button
@@ -102,24 +92,20 @@ export const WorkspaceSidebarContent: FC<Props> = ({
         </button>
       </nav>
 
-      <div className="mt-6 flex min-h-0 flex-1 flex-col">
-        <div className="mb-1 flex items-center justify-between px-2">
-          <span className="text-xs font-medium text-sidebar-foreground/50">Documents</span>
-          <button
-            type="button"
-            aria-label="Create document"
-            className="grid size-6 place-items-center rounded-md text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-            onClick={onCreateDocument}
-          >
-            <Plus className="size-3.5" />
-          </button>
-        </div>
-        <div className="min-h-0 overflow-y-auto">
-          <DocumentTree
-            documents={documents}
-            selectedDocumentId={selectedDocumentId}
-            onSelect={onSelectDocument}
-          />
+      <div className="mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div className="px-2 text-xs font-medium text-sidebar-foreground/50">Spaces</div>
+        <div className="mt-1 space-y-0.5">
+          {spaces.map((space) => (
+            <button
+              key={space.id}
+              type="button"
+              className={`flex h-8 w-full items-center gap-2 rounded-lg px-2 text-sm ${activeSpaceId === space.id ? "bg-sidebar-accent font-medium" : "text-sidebar-foreground/75 hover:bg-sidebar-accent/70"}`}
+              onClick={() => onOpenSpace(space.id)}
+            >
+              <Layers3 className="size-4" />
+              <span className="truncate">{space.title}</span>
+            </button>
+          ))}
         </div>
       </div>
 

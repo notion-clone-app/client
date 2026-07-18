@@ -7,6 +7,7 @@ describe("indexedDbWorkspaceDocumentRepository", () => {
     const document = createEmptyWorkspaceDocument({
       id: "offline-document",
       workspaceId: "offline-workspace",
+      spaceId: "tech",
       authorId: "user-1",
       now: "2026-07-18T12:00:00.000Z",
     });

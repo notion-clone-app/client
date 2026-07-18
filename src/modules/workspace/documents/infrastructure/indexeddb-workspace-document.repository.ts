@@ -37,6 +37,16 @@ export const indexedDbWorkspaceDocumentRepository: WorkspaceDocumentRepository =
     transaction.objectStore(documentStoreName).put(document);
     await transactionToPromise(transaction);
   },
+
+  async remove(documentId) {
+    memoryDocuments.delete(documentId);
+    const database = await openDatabase();
+    if (!database) return;
+
+    const transaction = database.transaction(documentStoreName, "readwrite");
+    transaction.objectStore(documentStoreName).delete(documentId);
+    await transactionToPromise(transaction);
+  },
 };
 
 function openDatabase(): Promise<IDBDatabase | null> {

@@ -27,9 +27,10 @@ export function useLocalWorkspaceDocuments(
       .list(localWorkspaceId)
       .then((documents) => {
         if (isCurrent) {
+          const migratedDocuments = documents.map(migrateLocalDocument);
           setLocalDocuments((current) => [
             ...current,
-            ...documents.filter(
+            ...migratedDocuments.filter(
               (document) => !current.some((candidate) => candidate.id === document.id),
             ),
           ]);
@@ -81,13 +82,79 @@ export function useLocalWorkspaceDocuments(
     [repository],
   );
 
-  const createDocument = useCallback(() => {
-    if (!authorId) return null;
+  const createDocument = useCallback(
+    (spaceId: string) => {
+      if (!authorId) return null;
 
-    const document = createEmptyWorkspaceDocument({ workspaceId: localWorkspaceId, authorId });
-    updateDocument(document);
-    return document;
-  }, [authorId, updateDocument]);
+      const document = createEmptyWorkspaceDocument({
+        workspaceId: localWorkspaceId,
+        spaceId,
+        authorId,
+      });
+      updateDocument(document);
+      return document;
+    },
+    [authorId, updateDocument],
+  );
+
+  const createDraftFromDocument = useCallback(
+    (documentId: string) => {
+      if (!authorId) return null;
+      const sourceNode = findWorkspaceDocument(documents, documentId);
+      if (sourceNode?.type !== "document-board" || sourceNode.state !== "published") {
+        return null;
+      }
+
+      const source = localDocumentById.get(documentId) ?? createDemoDocumentBoard(sourceNode);
+      const now = new Date().toISOString();
+      const draft: WorkspaceDocumentContent = {
+        ...source,
+        id: crypto.randomUUID(),
+        spaceId: sourceNode.spaceId,
+        sourceDocumentId: source.id,
+        metadata: {
+          revision: 0,
+          createdAt: now,
+          updatedAt: now,
+          createdBy: authorId,
+          updatedBy: authorId,
+        },
+      };
+      updateDocument(draft);
+      return draft;
+    },
+    [authorId, documents, localDocumentById, updateDocument],
+  );
+
+  const publishDraftToSource = useCallback(
+    (draftId: string) => {
+      const draft = localDocumentById.get(draftId);
+      if (!draft?.sourceDocumentId) return;
+      const sourceNode = findWorkspaceDocument(documents, draft.sourceDocumentId);
+      if (!sourceNode) return;
+      const source = localDocumentById.get(sourceNode.id) ?? createDemoDocumentBoard(sourceNode);
+      const published: WorkspaceDocumentContent = {
+        ...draft,
+        id: source.id,
+        sourceDocumentId: undefined,
+        metadata: {
+          ...source.metadata,
+          revision: source.metadata.revision + 1,
+          updatedAt: new Date().toISOString(),
+          updatedBy: draft.metadata.updatedBy,
+        },
+      };
+
+      setLocalDocuments((current) => [
+        published,
+        ...current.filter((document) => document.id !== draftId && document.id !== source.id),
+      ]);
+      void Promise.all([repository.save(published), repository.remove(draftId)]).catch(
+        (error: unknown) => console.error("Failed to publish local draft", error),
+      );
+    },
+    [documents, localDocumentById, repository],
+  );
 
   const getDocumentContent = useCallback(
     (document: WorkspaceDocument) =>
@@ -103,10 +170,16 @@ export function useLocalWorkspaceDocuments(
     documents,
     isHydrated,
     createDocument,
+    createDraftFromDocument,
+    publishDraftToSource,
     getDocumentContent,
     updateDocument,
     placeDocument,
   };
+}
+
+function migrateLocalDocument(document: WorkspaceDocumentContent): WorkspaceDocumentContent {
+  return { ...document, spaceId: document.spaceId ?? "business" };
 }
 
 function placeWorkspaceDocument(
@@ -117,11 +190,21 @@ function placeWorkspaceDocument(
   if (documentId === targetId) return documents;
   const document = findWorkspaceDocument(documents, documentId);
   const target = findWorkspaceDocument(documents, targetId);
-  if (!document || !target || findWorkspaceDocument(document.children ?? [], targetId))
-    return documents;
+  if (!document || findWorkspaceDocument(document.children ?? [], targetId)) return documents;
 
   const withoutDocument = removeWorkspaceDocument(documents, documentId);
-  return appendWorkspaceDocument(withoutDocument, targetId, document);
+  if (!target) {
+    return [
+      { ...document, state: "published", spaceId: targetId, sourceDocumentId: undefined },
+      ...withoutDocument,
+    ];
+  }
+  return appendWorkspaceDocument(withoutDocument, targetId, {
+    ...document,
+    state: "published",
+    spaceId: target.spaceId,
+    sourceDocumentId: undefined,
+  });
 }
 
 function appendWorkspaceDocument(
@@ -160,6 +243,9 @@ function toWorkspaceDocument(document: WorkspaceDocumentContent): WorkspaceDocum
     id: document.id,
     title: document.title.trim() || "Untitled",
     type: "document-board",
+    state: "draft",
+    spaceId: document.spaceId ?? "business",
+    sourceDocumentId: document.sourceDocumentId,
   };
 }
 

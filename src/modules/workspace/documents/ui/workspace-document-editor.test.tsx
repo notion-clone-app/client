@@ -9,6 +9,7 @@ const initialDocument: WorkspaceDocumentContent = {
   schemaVersion: 1,
   id: "document-1",
   workspaceId: "workspace-1",
+  spaceId: "tech",
   title: "Draft",
   metadata: {
     revision: 1,

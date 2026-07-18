@@ -5,33 +5,64 @@ import { ROUTES, workspaceReviewPath } from "@/shared/model";
 import { Button } from "@/shared/ui/kit/button";
 import type { WorkspaceDocument } from "../documents/model/workspace-document.entity";
 import { useWorkspaceContext } from "../workspace.context";
+import { createDocumentReviewChanges } from "./application/create-document-review-changes";
 
 const CreateReviewPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const workspace = useWorkspaceContext();
-  const documents = flattenDocuments(workspace.documents).filter(
-    (document) => document.type === "document-board",
+  const allDocuments = flattenDocuments(workspace.documents);
+  const documents = allDocuments.filter(
+    (document) => document.type === "document-board" && document.state === "draft",
   );
+  const targetBoards: readonly WorkspaceDocument[] = [
+    ...workspace.spaces.map((space) => ({
+      id: space.id,
+      title: space.title,
+      type: "folder" as const,
+      state: "published" as const,
+      spaceId: space.id,
+    })),
+    ...allDocuments.filter(
+      (document) => document.type === "folder" && document.state === "published",
+    ),
+  ];
   const requestedDocumentId = searchParams.get("documentId");
   const [documentId, setDocumentId] = useState(
     documents.some((document) => document.id === requestedDocumentId)
       ? (requestedDocumentId ?? "")
       : (documents[0]?.id ?? ""),
   );
-  const [boardId, setBoardId] = useState(documents[1]?.id ?? documents[0]?.id ?? "");
+  const initialDocument = documents.find((document) => document.id === documentId);
+  const [boardId, setBoardId] = useState(
+    initialDocument?.sourceDocumentId ?? initialDocument?.spaceId ?? targetBoards[0]?.id ?? "",
+  );
   const [summary, setSummary] = useState("");
-  const [path, setPath] = useState("Knowledge base / New page");
-  const [placement, setPlacement] = useState("Add as the last child page in this section.");
+  const [path, setPath] = useState(
+    initialDocument?.sourceDocumentId
+      ? `Source / ${allDocuments.find((document) => document.id === initialDocument.sourceDocumentId)?.title ?? "Document"}`
+      : "Knowledge base / New page",
+  );
+  const [placement, setPlacement] = useState(
+    initialDocument?.sourceDocumentId
+      ? "Replace the source document with the approved revision."
+      : "Add as the last child page in this section.",
+  );
   const [reviewerIds, setReviewerIds] = useState<readonly string[]>(
     workspace.members.filter((member) => member.role === "reviewer").map((member) => member.id),
   );
+  const selectedDocument = documents.find((document) => document.id === documentId);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const document = documents.find((candidate) => candidate.id === documentId);
-    const board = documents.find((candidate) => candidate.id === boardId);
+    const source = document?.sourceDocumentId
+      ? allDocuments.find((candidate) => candidate.id === document.sourceDocumentId)
+      : null;
+    const board = source ?? targetBoards.find((candidate) => candidate.id === boardId);
     if (!document || !board || !reviewerIds.length) return;
+    const draftContent = workspace.getDocumentContent(document);
+    const sourceContent = source ? workspace.getDocumentContent(source) : null;
 
     const review = workspace.createReview({
       documentId: document.id,
@@ -39,12 +70,14 @@ const CreateReviewPage = () => {
       authorId: workspace.members[0]?.id ?? "current-user",
       summary: summary.trim() || "Ready for workspace review.",
       target: {
+        mode: source ? "replace-source" : "place-new",
         boardId: board.id,
         boardTitle: board.title,
         path: path.trim(),
         placement: placement.trim(),
       },
       reviewerIds,
+      changes: createDocumentReviewChanges(sourceContent, draftContent),
     });
     void navigate(workspaceReviewPath(review.id));
   };
@@ -66,12 +99,36 @@ const CreateReviewPage = () => {
       </div>
 
       <form className="mt-9 space-y-5" onSubmit={submit}>
+        {!documents.length && (
+          <div className="rounded-2xl border border-dashed border-border bg-muted/30 px-5 py-4 text-sm leading-6 text-muted-foreground">
+            There are no drafts to review. Create a document from the Drafts section in the sidebar
+            first.
+          </div>
+        )}
         <Field label="Document">
           <select
             value={documentId}
             className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring/20"
-            onChange={(event) => setDocumentId(event.target.value)}
+            onChange={(event) => {
+              const nextId = event.target.value;
+              const nextDocument = documents.find((document) => document.id === nextId);
+              setDocumentId(nextId);
+              setBoardId(
+                nextDocument?.sourceDocumentId ??
+                  nextDocument?.spaceId ??
+                  targetBoards[0]?.id ??
+                  "",
+              );
+              if (nextDocument?.sourceDocumentId) {
+                const source = allDocuments.find(
+                  (document) => document.id === nextDocument.sourceDocumentId,
+                );
+                setPath(`Source / ${source?.title ?? "Document"}`);
+                setPlacement("Replace the source document with the approved revision.");
+              }
+            }}
           >
+            {!documents.length && <option value="">No drafts available</option>}
             {documents.map((document) => (
               <option key={document.id} value={document.id}>
                 {document.title}
@@ -95,17 +152,31 @@ const CreateReviewPage = () => {
             <MapPin className="size-4" /> Publication target
           </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <Field label="Board">
+            <Field label={selectedDocument?.sourceDocumentId ? "Source document" : "Folder"}>
               <select
                 value={boardId}
+                disabled={Boolean(
+                  documents.find((document) => document.id === documentId)?.sourceDocumentId,
+                )}
                 className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none"
                 onChange={(event) => setBoardId(event.target.value)}
               >
-                {documents.map((document) => (
-                  <option key={document.id} value={document.id}>
-                    {document.title}
+                {selectedDocument?.sourceDocumentId ? (
+                  <option value={boardId}>
+                    {allDocuments.find((document) => document.id === boardId)?.title ??
+                      "Source document"}
                   </option>
-                ))}
+                ) : (
+                  !targetBoards.length && <option value="">No publication targets available</option>
+                )}
+                {!selectedDocument?.sourceDocumentId &&
+                  targetBoards
+                    .filter((document) => document.spaceId === selectedDocument?.spaceId)
+                    .map((document) => (
+                      <option key={document.id} value={document.id}>
+                        {document.title}
+                      </option>
+                    ))}
               </select>
             </Field>
             <Field label="Path">
@@ -170,7 +241,10 @@ const CreateReviewPage = () => {
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={!reviewerIds.length}>
+          <Button
+            type="submit"
+            disabled={!reviewerIds.length || !documents.length || !targetBoards.length}
+          >
             Create review request
           </Button>
         </div>

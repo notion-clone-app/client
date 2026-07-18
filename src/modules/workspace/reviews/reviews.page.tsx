@@ -31,6 +31,10 @@ const ReviewsPage = () => {
           const approvals = review.reviewers.filter(
             (reviewer) => reviewer.status === "approved",
           ).length;
+          const comments = review.changes.reduce(
+            (total, change) => total + change.comments.length,
+            0,
+          );
           return (
             <button
               key={review.id}
@@ -47,11 +51,12 @@ const ReviewsPage = () => {
                   <ReviewStatus status={review.status} />
                 </span>
                 <span className="mt-1 block truncate text-xs text-muted-foreground">
-                  → {review.target.boardTitle} · {review.target.path}
+                  {review.target.mode === "replace-source" ? "Updates" : "Publishes to"} →{" "}
+                  {review.target.boardTitle} · {review.target.path}
                 </span>
               </span>
               <span className="hidden text-xs text-muted-foreground sm:block">
-                {approvals}/{review.reviewers.length} approvals · {review.comments.length} comments
+                {approvals}/{review.reviewers.length} approvals · {comments} comments
               </span>
               <ArrowRight className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
             </button>

@@ -18,6 +18,9 @@ export type WorkspaceDocumentContent = Readonly<{
   schemaVersion: 1;
   id: string;
   workspaceId: string;
+  spaceId: string | null;
+  /** Published document this draft was forked from. */
+  sourceDocumentId?: string | undefined;
   title: string;
   coverImage?: string | undefined;
   metadata: WorkspaceDocumentMetadata;

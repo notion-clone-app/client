@@ -1,4 +1,4 @@
-import { FileText, PenTool, type LucideIcon } from "lucide-react";
+import { FileText, Folder, PenTool, type LucideIcon } from "lucide-react";
 import type { WorkspaceDocumentType } from "../model/workspace-document.entity";
 
 type DocumentPresentation = Readonly<{
@@ -17,6 +17,11 @@ const presentations: Record<WorkspaceDocumentType, DocumentPresentation> = {
     icon: PenTool,
     label: "Draw board",
     iconClassName: "text-violet-600 dark:text-violet-400",
+  },
+  folder: {
+    icon: Folder,
+    label: "Folder",
+    iconClassName: "text-amber-600 dark:text-amber-400",
   },
 };
 

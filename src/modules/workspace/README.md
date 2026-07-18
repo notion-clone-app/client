@@ -14,6 +14,7 @@ Workspace owns:
 - document and workspace identifiers;
 - document title, cover and audit metadata;
 - the navigation tree and document type;
+- workspace subspaces and draft/published navigation state;
 - optimistic application state;
 - persistence ports and the IndexedDB adapter;
 - workspace-specific page composition, routing and export.
@@ -44,6 +45,7 @@ workspace/
 │   ├── demo-document-board  Temporary content seed
 │   └── workspace-documents  Temporary navigation seed and tree lookup
 ├── reviews/                 Document review aggregate and review request UI
+├── spaces/                  Space collection and local-first creation
 ├── settings/                Workspace, member and approval settings UI
 ├── dashboard.page.tsx
 ├── document.page.tsx
@@ -54,6 +56,38 @@ Dependencies point inward: UI and infrastructure depend on application/model con
 may depend on the portable `DocumentBlock` type, but shared editor code must never import workspace
 code.
 
+## Spaces and drafts
+
+The navigation model is space-first:
+
+```text
+Workspace
+├── Tech
+│   ├── Drafts
+│   └── folder/document tree
+└── Business
+    ├── Drafts
+    └── folder/document tree
+```
+
+The sidebar intentionally contains neither documents nor a global Drafts item. It links to a space
+page, where users navigate a larger folder/document hierarchy. Every new document starts with
+`state: "draft"` and the owning `spaceId`, so unfinished content remains visible only inside its
+space.
+
+Spaces are shown both in the sidebar and on workspace home. Prototype-created spaces are persisted
+in local storage by `useLocalWorkspaceSpaces`; document content and its `spaceId` remain in the
+IndexedDB document repository. The backend should replace both with workspace-scoped repositories
+and enforce unique names or slugs according to product rules.
+
+A draft may also have `sourceDocumentId`. Such a draft is a working copy of an existing published
+document. Its review targets the source, and publication writes the approved content back as the
+next source revision. A draft without a source is published as a new document at its space root or
+under a selected folder.
+
+In the prototype, published documents act as placement targets. The backend model should introduce
+an explicit collection or board identity instead of overloading a document node with that role.
+
 ## Document representations
 
 The context deliberately keeps two representations:
@@ -61,7 +95,7 @@ The context deliberately keeps two representations:
 - `WorkspaceDocument` is a lightweight navigation node with `id`, `title`, `type` and children.
 - `WorkspaceDocumentContent` is the editable aggregate with blocks, cover and audit metadata.
 
-This prevents the sidebar tree from loading full document content and leaves room for independent
+This prevents the space tree from loading full document content and leaves room for independent
 navigation and content endpoints.
 
 ## Local-first flow
@@ -95,12 +129,18 @@ The shared block editor should remain unaware of that lifecycle.
 Publishing is modeled separately from editing:
 
 ```text
-editable document → review request → approvals and comments → published board entry
+published revision → draft copy → review → next published revision
+new draft → review → new published space entry
 ```
 
 `DocumentReview` references a document by ID and records the requested destination, placement
-instructions, reviewers and discussion. It does not embed editor blocks. This keeps content editing
-independent from governance and allows multiple review attempts over future document revisions.
+instructions, reviewers and changes. Every discussion belongs to a specific `DocumentReviewChange`
+instead of the whole document. The API version should anchor a change to an immutable revision,
+stable block ID and optional text range so later edits cannot silently move a comment's meaning.
+
+The review page separates `Overview` from `Changes`. Overview owns governance and publication;
+Changes owns the block-level before/after diff and inline discussions. This follows GitLab's review
+flow while keeping the visual language compact and consistent with the rest of the workspace.
 
 The current collaboration adapter is intentionally in-memory. It demonstrates these rules:
 
@@ -113,8 +153,9 @@ The current collaboration adapter is intentionally in-memory. It demonstrates th
 When API integration arrives, review requests and membership should receive their own repositories
 instead of being added to `WorkspaceDocumentRepository`.
 
-Mock membership, reviews and published placements reset after a page reload. Document content still
-uses the IndexedDB repository described above.
+Mock membership, reviews and published placements reset after a page reload. Created spaces use
+local storage, while document content uses the IndexedDB repository described above. Folder
+creation, moving and ordering remain navigation concerns for the future backend adapter.
 
 ## Adding a document type
 

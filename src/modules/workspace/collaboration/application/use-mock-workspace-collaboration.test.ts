@@ -12,7 +12,7 @@ describe("useMockWorkspaceCollaboration", () => {
       "in-review",
     );
 
-    act(() => result.current.resolveComment(reviewId, "comment-1"));
+    act(() => result.current.resolveComment(reviewId, "change-release-scope", "comment-1"));
     expect(result.current.reviews.find((review) => review.id === reviewId)?.status).toBe(
       "approved",
     );
@@ -21,6 +21,23 @@ describe("useMockWorkspaceCollaboration", () => {
     expect(result.current.reviews.find((review) => review.id === reviewId)?.status).toBe(
       "published",
     );
+  });
+
+  it("attaches a discussion to a specific change", () => {
+    const { result } = renderHook(useMockWorkspaceCollaboration);
+
+    act(() =>
+      result.current.addComment(
+        "review-product-notes",
+        "change-success-metrics",
+        "demo-user",
+        "Add an owner for this metric.",
+      ),
+    );
+
+    const review = result.current.reviews.find((item) => item.id === "review-product-notes");
+    const change = review?.changes.find((item) => item.id === "change-success-metrics");
+    expect(change?.comments.at(-1)?.body).toBe("Add an owner for this metric.");
   });
 
   it("adds an invited workspace member", () => {

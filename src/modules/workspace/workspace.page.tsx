@@ -1,8 +1,8 @@
 import { Outlet, useLocation, useNavigate, useParams } from "react-router";
-import { Download, GitPullRequest, Search } from "lucide-react";
+import { CopyPlus, Download, GitPullRequest, Search } from "lucide-react";
 import { useSession } from "@/modules/identity";
 import { serializeBlocksToMarkdown } from "@/shared/editor";
-import { ROUTES, workspaceDocumentPath } from "@/shared/model";
+import { ROUTES, workspaceDocumentPath, workspaceSpacePath } from "@/shared/model";
 import { Button } from "@/shared/ui/kit/button";
 import { useMockWorkspaceCollaboration } from "./collaboration/application/use-mock-workspace-collaboration";
 import { WorkspaceHeaderContent } from "./common/workspace-header";
@@ -10,19 +10,20 @@ import { WorkspaceLayout } from "./common/workspace-layout";
 import { WorkspaceSidebarContent } from "./common/workspace-sidebar-content";
 import { useLocalWorkspaceDocuments } from "./documents/application/use-local-workspace-documents";
 import { indexedDbWorkspaceDocumentRepository } from "./documents/infrastructure/indexeddb-workspace-document.repository";
-import type { WorkspaceDocument } from "./documents/model/workspace-document.entity";
 import { findWorkspaceDocument } from "./documents/workspace-documents";
+import { useLocalWorkspaceSpaces } from "./spaces/application/use-local-workspace-spaces";
 
 const WorkspacePage = () => {
   const session = useSession();
   const navigate = useNavigate();
   const location = useLocation();
-  const { documentId } = useParams<"documentId">();
+  const { documentId, spaceId } = useParams<"documentId" | "spaceId">();
   const localDocuments = useLocalWorkspaceDocuments(
     session.data?.viewer.id,
     indexedDbWorkspaceDocumentRepository,
   );
   const collaboration = useMockWorkspaceCollaboration();
+  const localSpaces = useLocalWorkspaceSpaces();
   const selectedDocument = documentId
     ? findWorkspaceDocument(localDocuments.documents, documentId)
     : null;
@@ -31,23 +32,23 @@ const WorkspacePage = () => {
     ? "reviews"
     : location.pathname.startsWith(ROUTES.WORKSPACE_SETTINGS)
       ? "settings"
-      : documentId
-        ? "document"
-        : "home";
+      : spaceId
+        ? "space"
+        : documentId
+          ? "document"
+          : "home";
+  const selectedSpace = localSpaces.spaces.find((space) => space.id === spaceId);
   const headerTitle =
     activeSection === "reviews"
       ? "Document reviews"
       : activeSection === "settings"
         ? "Workspace settings"
-        : (selectedDocument?.title ?? (documentId ? "Document" : "Home"));
+        : (selectedSpace?.title ?? selectedDocument?.title ?? (documentId ? "Document" : "Home"));
 
-  const openDocument = (document: WorkspaceDocument) => {
-    void navigate(workspaceDocumentPath(document.id));
-  };
-
-  const createDocument = () => {
-    const document = localDocuments.createDocument();
-    if (document) void navigate(workspaceDocumentPath(document.id));
+  const createDraftFromSelectedDocument = () => {
+    if (!selectedDocument) return;
+    const draft = localDocuments.createDraftFromDocument(selectedDocument.id);
+    if (draft) void navigate(workspaceDocumentPath(draft.id));
   };
 
   const exportDocument = () => {
@@ -69,7 +70,11 @@ const WorkspacePage = () => {
     const review = collaboration.reviews.find((candidate) => candidate.id === reviewId);
     if (review?.status !== "approved") return;
     collaboration.publishReview(reviewId);
-    localDocuments.placeDocument(review.documentId, review.target.boardId);
+    if (review.target.mode === "replace-source") {
+      localDocuments.publishDraftToSource(review.documentId);
+    } else {
+      localDocuments.placeDocument(review.documentId, review.target.boardId);
+    }
   };
 
   return (
@@ -78,14 +83,13 @@ const WorkspacePage = () => {
         viewer ? (
           <WorkspaceSidebarContent
             viewer={viewer}
-            documents={localDocuments.documents}
-            selectedDocumentId={documentId ?? null}
-            onSelectDocument={openDocument}
-            onCreateDocument={createDocument}
+            spaces={localSpaces.spaces}
             onOpenHome={() => void navigate(ROUTES.WORKSPACE)}
+            onOpenSpace={(id) => void navigate(workspaceSpacePath(id))}
             onOpenReviews={() => void navigate(ROUTES.WORKSPACE_REVIEWS)}
             onOpenSettings={() => void navigate(ROUTES.WORKSPACE_SETTINGS)}
             activeSection={activeSection}
+            activeSpaceId={spaceId ?? selectedDocument?.spaceId ?? null}
             reviewCount={
               collaboration.reviews.filter((review) => review.status === "in-review").length
             }
@@ -109,18 +113,26 @@ const WorkspacePage = () => {
         </Button>
         {selectedDocument?.type === "document-board" && (
           <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() =>
-                void navigate(
-                  `${ROUTES.WORKSPACE_REVIEW_CREATE}?documentId=${encodeURIComponent(selectedDocument.id)}`,
-                )
-              }
-            >
-              <GitPullRequest />
-              <span className="hidden sm:inline">Request review</span>
-            </Button>
+            {selectedDocument.state === "published" && (
+              <Button variant="ghost" size="sm" onClick={createDraftFromSelectedDocument}>
+                <CopyPlus />
+                <span className="hidden sm:inline">Create draft</span>
+              </Button>
+            )}
+            {selectedDocument.state === "draft" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  void navigate(
+                    `${ROUTES.WORKSPACE_REVIEW_CREATE}?documentId=${encodeURIComponent(selectedDocument.id)}`,
+                  )
+                }
+              >
+                <GitPullRequest />
+                <span className="hidden sm:inline">Request review</span>
+              </Button>
+            )}
             <Button variant="ghost" size="sm" aria-label="Export document" onClick={exportDocument}>
               <Download />
               <span className="hidden sm:inline">Export</span>
@@ -131,7 +143,12 @@ const WorkspacePage = () => {
       <Outlet
         context={{
           documents: localDocuments.documents,
+          spaces: localSpaces.spaces,
           isHydrated: localDocuments.isHydrated,
+          createSpace: localSpaces.createSpace,
+          createDocument: localDocuments.createDocument,
+          createDraftFromDocument: localDocuments.createDraftFromDocument,
+          publishDraftToSource: localDocuments.publishDraftToSource,
           getDocumentContent: localDocuments.getDocumentContent,
           updateDocument: localDocuments.updateDocument,
           ...collaboration,

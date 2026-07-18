@@ -3,24 +3,72 @@ import type { WorkspaceDocument } from "./model/workspace-document.entity";
 /** Temporary navigation seed used until workspace documents come from the API. */
 export const demoWorkspaceDocuments: readonly WorkspaceDocument[] = [
   {
-    id: "product",
-    title: "Product notes",
+    id: "release-notes-draft",
+    title: "Release notes draft",
     type: "document-board",
+    state: "draft",
+    spaceId: "business",
+  },
+  {
+    id: "product",
+    title: "Product",
+    type: "folder",
+    state: "published",
+    spaceId: "business",
     children: [
-      { id: "roadmap", title: "Roadmap sketch", type: "draw-board" },
-      { id: "research", title: "User research", type: "document-board" },
+      {
+        id: "product-notes",
+        title: "Product notes",
+        type: "document-board",
+        state: "published",
+        spaceId: "business",
+      },
+      {
+        id: "roadmap",
+        title: "Roadmap sketch",
+        type: "draw-board",
+        state: "published",
+        spaceId: "business",
+      },
+      {
+        id: "research",
+        title: "User research",
+        type: "document-board",
+        state: "published",
+        spaceId: "business",
+      },
     ],
   },
   {
     id: "engineering",
-    title: "Engineering wiki",
-    type: "document-board",
+    title: "Engineering",
+    type: "folder",
+    state: "published",
+    spaceId: "tech",
     children: [
-      { id: "architecture", title: "System architecture", type: "draw-board" },
-      { id: "decisions", title: "Architecture decisions", type: "document-board" },
+      {
+        id: "architecture",
+        title: "System architecture",
+        type: "draw-board",
+        state: "published",
+        spaceId: "tech",
+      },
+      {
+        id: "decisions",
+        title: "Architecture decisions",
+        type: "document-board",
+        state: "published",
+        spaceId: "tech",
+      },
     ],
   },
-  { id: "ideas", title: "Ideas canvas", type: "draw-board" },
+  {
+    id: "ideas",
+    title: "Ideas canvas",
+    type: "draw-board",
+    state: "published",
+    spaceId: "business",
+  },
 ];
 
 /** Finds a document node recursively in the workspace navigation tree. */

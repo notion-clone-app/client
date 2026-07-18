@@ -13,16 +13,31 @@ type DocumentReviewComment = Readonly<{
   resolved: boolean;
 }>;
 
+/** A reviewable delta with its own discussion thread. */
+type DocumentReviewChange = Readonly<{
+  id: string;
+  blockId: string | null;
+  kind: "added" | "updated" | "removed";
+  label: string;
+  before?: string;
+  after?: string;
+  comments: readonly DocumentReviewComment[];
+}>;
+
 type DocumentReviewTarget = Readonly<{
+  mode: "place-new" | "replace-source";
   boardId: string;
   boardTitle: string;
   path: string;
   placement: string;
 }>;
 
+export type CreateDocumentReviewChangeInput = Omit<DocumentReviewChange, "id" | "comments">;
+
 /**
  * Review request that controls when a document may be published to a workspace board.
- * It references document content without embedding portable editor blocks.
+ * It references an immutable document revision. Discussions are anchored to
+ * individual changes so a comment keeps its meaning as the review grows.
  */
 export type DocumentReview = Readonly<{
   id: string;
@@ -33,7 +48,7 @@ export type DocumentReview = Readonly<{
   target: DocumentReviewTarget;
   status: DocumentReviewStatus;
   reviewers: readonly DocumentReviewer[];
-  comments: readonly DocumentReviewComment[];
+  changes: readonly DocumentReviewChange[];
   createdAt: string;
 }>;
 
@@ -44,4 +59,5 @@ export type CreateDocumentReviewInput = Readonly<{
   summary: string;
   target: DocumentReviewTarget;
   reviewerIds: readonly string[];
+  changes: readonly CreateDocumentReviewChangeInput[];
 }>;

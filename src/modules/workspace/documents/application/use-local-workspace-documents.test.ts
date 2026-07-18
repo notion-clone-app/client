@@ -16,15 +16,17 @@ describe("useLocalWorkspaceDocuments", () => {
     const repository: WorkspaceDocumentRepository = {
       list: vi.fn().mockResolvedValue([]),
       save,
+      remove: vi.fn().mockResolvedValue(undefined),
     };
     const { result } = renderHook(() => useLocalWorkspaceDocuments("user-1", repository));
     await waitFor(() => expect(result.current.isHydrated).toBe(true));
 
     act(() => {
-      result.current.createDocument();
+      result.current.createDocument("tech");
     });
 
     expect(result.current.documents[0]?.title).toBe("Untitled");
+    expect(result.current.documents[0]?.spaceId).toBe("tech");
     expect(save).toHaveBeenCalledOnce();
 
     act(() => {
@@ -36,6 +38,7 @@ describe("useLocalWorkspaceDocuments", () => {
     const repository: WorkspaceDocumentRepository = {
       list: vi.fn().mockResolvedValue([]),
       save: vi.fn().mockResolvedValue(undefined),
+      remove: vi.fn().mockResolvedValue(undefined),
     };
     const { result } = renderHook(() => useLocalWorkspaceDocuments("user-1", repository));
     await waitFor(() => expect(result.current.isHydrated).toBe(true));
@@ -43,7 +46,32 @@ describe("useLocalWorkspaceDocuments", () => {
     act(() => result.current.placeDocument("product", "engineering"));
 
     const engineering = findWorkspaceDocument(result.current.documents, "engineering");
-    expect(engineering?.children?.some((document) => document.id === "product")).toBe(true);
+    const product = engineering?.children?.find((document) => document.id === "product");
+    expect(product).toMatchObject({ state: "published", spaceId: "tech" });
     expect(result.current.documents.some((document) => document.id === "product")).toBe(false);
+  });
+
+  it("creates a draft from a published document and publishes it back as a revision", async () => {
+    const remove = vi.fn().mockResolvedValue(undefined);
+    const repository: WorkspaceDocumentRepository = {
+      list: vi.fn().mockResolvedValue([]),
+      save: vi.fn().mockResolvedValue(undefined),
+      remove,
+    };
+    const { result } = renderHook(() => useLocalWorkspaceDocuments("user-1", repository));
+    await waitFor(() => expect(result.current.isHydrated).toBe(true));
+
+    let draftId = "";
+    act(() => {
+      draftId = result.current.createDraftFromDocument("product-notes")?.id ?? "";
+    });
+    expect(findWorkspaceDocument(result.current.documents, draftId)).toMatchObject({
+      state: "draft",
+      sourceDocumentId: "product-notes",
+    });
+
+    act(() => result.current.publishDraftToSource(draftId));
+    expect(findWorkspaceDocument(result.current.documents, draftId)).toBeNull();
+    expect(remove).toHaveBeenCalledWith(draftId);
   });
 });

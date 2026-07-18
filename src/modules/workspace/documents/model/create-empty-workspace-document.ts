@@ -3,6 +3,7 @@ import type { WorkspaceDocumentContent } from "./workspace-document-content.enti
 type CreateEmptyWorkspaceDocumentOptions = Readonly<{
   id?: string;
   workspaceId: string;
+  spaceId: string;
   authorId: string;
   now?: string;
 }>;
@@ -11,6 +12,7 @@ type CreateEmptyWorkspaceDocumentOptions = Readonly<{
 export function createEmptyWorkspaceDocument({
   id = crypto.randomUUID(),
   workspaceId,
+  spaceId,
   authorId,
   now = new Date().toISOString(),
 }: CreateEmptyWorkspaceDocumentOptions): WorkspaceDocumentContent {
@@ -18,6 +20,7 @@ export function createEmptyWorkspaceDocument({
     schemaVersion: 1,
     id,
     workspaceId,
+    spaceId,
     title: "",
     metadata: {
       revision: 0,

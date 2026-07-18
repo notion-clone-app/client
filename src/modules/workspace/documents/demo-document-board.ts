@@ -47,6 +47,7 @@ export function createDemoDocumentBoard(document: WorkspaceDocument): WorkspaceD
     schemaVersion: 1,
     id: document.id,
     workspaceId: "demo-workspace",
+    spaceId: document.spaceId,
     title: document.title,
     metadata,
     blocks,
