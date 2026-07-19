@@ -1,6 +1,8 @@
 import { Navigate, useParams } from "react-router";
+import { useDocumentVersioning } from "@/modules/document-versioning";
 import { ROUTES } from "@/shared/model";
 import type { WorkspaceDocumentContent } from "./documents/model/workspace-document-content.entity";
+import { toDocumentRevisionSnapshot } from "./documents/application/to-document-revision-snapshot";
 import { getDocumentPresentation } from "./documents/ui/document-presentation.strategy";
 import { WorkspaceDocumentEditor } from "./documents/ui/workspace-document-editor";
 import { findWorkspaceDocument } from "./documents/workspace-documents";
@@ -9,6 +11,7 @@ import { useWorkspaceContext } from "./workspace.context";
 const DocumentPage = () => {
   const { documentId } = useParams<"documentId">();
   const workspace = useWorkspaceContext();
+  const versioning = useDocumentVersioning();
   const document = documentId ? findWorkspaceDocument(workspace.documents, documentId) : null;
 
   if (!workspace.isHydrated) {
@@ -21,13 +24,15 @@ const DocumentPage = () => {
   const Icon = presentation.icon;
 
   if (document.type === "document-board") {
-    const commentsByBlockId = createBlockComments(document.id, workspace);
+    const documentContent = workspace.getDocumentContent(document);
     return (
       <DocumentBoardEditor
         key={document.id}
-        document={workspace.getDocumentContent(document)}
-        onChange={workspace.updateDocument}
-        commentsByBlockId={commentsByBlockId}
+        document={documentContent}
+        onChange={(nextDocument) => {
+          workspace.updateDocument(nextDocument);
+          versioning.scheduleCheckpoint(nextDocument.id, toDocumentRevisionSnapshot(nextDocument));
+        }}
       />
     );
   }
@@ -49,52 +54,11 @@ const DocumentPage = () => {
 function DocumentBoardEditor({
   document,
   onChange,
-  commentsByBlockId,
 }: {
   document: WorkspaceDocumentContent;
   onChange: (document: WorkspaceDocumentContent) => void;
-  commentsByBlockId: ReadonlyMap<
-    string,
-    readonly { id: string; authorName: string; body: string; resolved: boolean }[]
-  >;
 }) {
-  return (
-    <WorkspaceDocumentEditor
-      document={document}
-      onChange={onChange}
-      commentsByBlockId={commentsByBlockId}
-    />
-  );
-}
-
-function createBlockComments(
-  documentId: string,
-  workspace: ReturnType<typeof useWorkspaceContext>,
-) {
-  const comments = new Map<
-    string,
-    readonly { id: string; authorName: string; body: string; resolved: boolean }[]
-  >();
-  const review = workspace.reviews.find(
-    (candidate) => candidate.documentId === documentId && candidate.status !== "published",
-  );
-  if (!review) return comments;
-
-  for (const change of review.changes) {
-    if (!change.blockId || !change.comments.length) continue;
-    comments.set(
-      change.blockId,
-      change.comments.map((comment) => ({
-        id: comment.id,
-        authorName:
-          workspace.members.find((member) => member.id === comment.authorId)?.name ??
-          "Workspace member",
-        body: comment.body,
-        resolved: comment.resolved,
-      })),
-    );
-  }
-  return comments;
+  return <WorkspaceDocumentEditor document={document} onChange={onChange} />;
 }
 
 export const Component = DocumentPage;

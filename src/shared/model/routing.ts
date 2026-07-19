@@ -6,6 +6,7 @@ export const ROUTES = {
   BUSINESS_REQUIREMENTS: "/requirements",
   WORKSPACE: "/workspace",
   WORKSPACE_DOCUMENT: "/workspace/documents/:documentId",
+  WORKSPACE_DOCUMENT_HISTORY: "/workspace/documents/:documentId/history",
   WORKSPACE_SPACE: "/workspace/spaces/:spaceId",
   WORKSPACE_SPACE_REVIEWS: "/workspace/spaces/:spaceId/reviews",
   WORKSPACE_SPACE_REVIEW_CREATE: "/workspace/spaces/:spaceId/reviews/new",
@@ -18,6 +19,10 @@ export const ROUTES = {
 
 export function workspaceDocumentPath(documentId: string) {
   return ROUTES.WORKSPACE_DOCUMENT.replace(":documentId", encodeURIComponent(documentId));
+}
+
+export function workspaceDocumentHistoryPath(documentId: string) {
+  return ROUTES.WORKSPACE_DOCUMENT_HISTORY.replace(":documentId", encodeURIComponent(documentId));
 }
 
 export function workspaceSpacePath(spaceId: string) {

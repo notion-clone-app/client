@@ -27,6 +27,7 @@ export function ReadonlyParagraphBlock({ block }: ReadonlyBlockRendererProps) {
 export function EditableParagraphBlock({
   block,
   onChange,
+  onDeleteEmpty,
   onInsertAfter,
   onTextSelectionChange,
 }: EditableBlockRendererProps) {
@@ -52,6 +53,17 @@ export function EditableParagraphBlock({
         )
       }
       onKeyDown={(event) => {
+        if (
+          event.key === "Backspace" &&
+          block.content.length === 0 &&
+          event.currentTarget.selectionStart === 0 &&
+          event.currentTarget.selectionEnd === 0
+        ) {
+          event.preventDefault();
+          onDeleteEmpty(block.id);
+          return;
+        }
+
         if (event.key !== "Enter" || event.shiftKey) return;
         event.preventDefault();
         onInsertAfter(block.id);

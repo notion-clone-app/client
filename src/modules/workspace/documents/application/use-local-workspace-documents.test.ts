@@ -6,7 +6,7 @@ import type { WorkspaceDocumentRepository } from "./workspace-document.repositor
 import { useLocalWorkspaceDocuments } from "./use-local-workspace-documents";
 
 describe("useLocalWorkspaceDocuments", () => {
-  it("publishes a new document before the repository save completes", async () => {
+  it("creates a new document before the repository save completes", async () => {
     let finishSave: (() => void) | undefined;
     const save = vi.fn().mockImplementation(
       () =>
@@ -32,6 +32,51 @@ describe("useLocalWorkspaceDocuments", () => {
 
     act(() => {
       finishSave?.();
+    });
+  });
+
+  it("creates a directly editable published page without review", async () => {
+    const repository: WorkspaceDocumentRepository = {
+      list: vi.fn().mockResolvedValue([]),
+      save: vi.fn().mockResolvedValue(undefined),
+      remove: vi.fn().mockResolvedValue(undefined),
+    };
+    const { result } = renderHook(() => useLocalWorkspaceDocuments("user-1", repository));
+    await waitFor(() => expect(result.current.isHydrated).toBe(true));
+
+    act(() => {
+      result.current.createDocument("space-1");
+    });
+
+    expect(result.current.documents[0]).toMatchObject({
+      state: "published",
+      spaceId: "space-1",
+    });
+  });
+
+  it("migrates a legacy review draft into a regular visible document", async () => {
+    const legacyDraft = {
+      ...createEmptyWorkspaceDocument({
+        id: "legacy-draft",
+        workspaceId: "local-workspace",
+        spaceId: "space-1",
+        authorId: "user-1",
+      }),
+      state: "draft" as const,
+      sourceDocumentId: "old-source",
+    };
+    const repository: WorkspaceDocumentRepository = {
+      list: vi.fn().mockResolvedValue([legacyDraft]),
+      save: vi.fn().mockResolvedValue(undefined),
+      remove: vi.fn().mockResolvedValue(undefined),
+    };
+    const { result } = renderHook(() => useLocalWorkspaceDocuments("user-1", repository));
+    await waitFor(() => expect(result.current.isHydrated).toBe(true));
+
+    expect(result.current.documents[0]).toMatchObject({
+      id: "legacy-draft",
+      state: "published",
+      sourceDocumentId: "old-source",
     });
   });
 
@@ -70,39 +115,5 @@ describe("useLocalWorkspaceDocuments", () => {
     const product = engineering?.children?.find((document) => document.id === "local-draft");
     expect(product).toMatchObject({ state: "published", spaceId: "tech" });
     expect(result.current.documents.some((document) => document.id === "local-draft")).toBe(false);
-  });
-
-  it("creates a draft from a published document and publishes it back as a revision", async () => {
-    const source = {
-      ...createEmptyWorkspaceDocument({
-        id: "published-source",
-        workspaceId: "local-workspace",
-        spaceId: "tech",
-        authorId: "user-1",
-      }),
-      title: "Product notes",
-      state: "published" as const,
-    };
-    const remove = vi.fn().mockResolvedValue(undefined);
-    const repository: WorkspaceDocumentRepository = {
-      list: vi.fn().mockResolvedValue([source]),
-      save: vi.fn().mockResolvedValue(undefined),
-      remove,
-    };
-    const { result } = renderHook(() => useLocalWorkspaceDocuments("user-1", repository));
-    await waitFor(() => expect(result.current.isHydrated).toBe(true));
-
-    let draftId = "";
-    act(() => {
-      draftId = result.current.createDraftFromDocument("published-source")?.id ?? "";
-    });
-    expect(findWorkspaceDocument(result.current.documents, draftId)).toMatchObject({
-      state: "draft",
-      sourceDocumentId: "published-source",
-    });
-
-    act(() => result.current.publishDraftToSource(draftId));
-    expect(findWorkspaceDocument(result.current.documents, draftId)).toBeNull();
-    expect(remove).toHaveBeenCalledWith(draftId);
   });
 });

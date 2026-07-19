@@ -35,6 +35,7 @@ export function ReadonlyListBlock({ block }: ReadonlyBlockRendererProps) {
 export function EditableListBlock({
   block,
   onChange,
+  onDeleteEmpty,
   onTextSelectionChange,
 }: EditableBlockRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -67,9 +68,30 @@ export function EditableListBlock({
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>, index: number) => {
+    const item = block.items[index];
+    if (!item) return;
+
+    if (
+      event.key === "Backspace" &&
+      item.content.length === 0 &&
+      event.currentTarget.selectionStart === 0 &&
+      event.currentTarget.selectionEnd === 0
+    ) {
+      event.preventDefault();
+      if (block.items.length === 1) {
+        onDeleteEmpty(block.id);
+        return;
+      }
+
+      const focusItem = block.items[index - 1] ?? block.items[index + 1];
+      pendingFocusItemIdRef.current = focusItem?.id ?? null;
+      onChange({ ...block, items: block.items.filter(({ id }) => id !== item.id) });
+      return;
+    }
+
     if (event.key !== "Enter" || event.shiftKey) return;
     event.preventDefault();
-    insertItemAfter(index);
+    if (item.content.trim().length > 0) insertItemAfter(index);
   };
 
   return (

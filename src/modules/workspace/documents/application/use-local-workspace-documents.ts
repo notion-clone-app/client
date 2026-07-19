@@ -96,42 +96,12 @@ export function useLocalWorkspaceDocuments(
         workspaceId: localWorkspaceId,
         spaceId,
         authorId,
+        state: "published",
       });
       updateDocument(document);
       return document;
     },
     [authorId, updateDocument],
-  );
-
-  const createDraftFromDocument = useCallback(
-    (documentId: string) => {
-      if (!authorId) return null;
-      const sourceNode = findWorkspaceDocument(documents, documentId);
-      if (sourceNode?.type !== "document-board" || sourceNode.state !== "published") {
-        return null;
-      }
-
-      const source = localDocumentById.get(documentId);
-      if (!source) return null;
-      const now = new Date().toISOString();
-      const draft: WorkspaceDocumentContent = {
-        ...source,
-        id: crypto.randomUUID(),
-        state: "draft",
-        spaceId: sourceNode.spaceId,
-        sourceDocumentId: source.id,
-        metadata: {
-          revision: 0,
-          createdAt: now,
-          updatedAt: now,
-          createdBy: authorId,
-          updatedBy: authorId,
-        },
-      };
-      updateDocument(draft);
-      return draft;
-    },
-    [authorId, documents, localDocumentById, updateDocument],
   );
 
   const publishDraftToSource = useCallback(
@@ -199,7 +169,6 @@ export function useLocalWorkspaceDocuments(
     documents,
     isHydrated,
     createDocument,
-    createDraftFromDocument,
     publishDraftToSource,
     getDocumentContent,
     updateDocument,
@@ -210,13 +179,12 @@ export function useLocalWorkspaceDocuments(
 function migrateLocalDocument(document: WorkspaceDocumentContent): WorkspaceDocumentContent {
   const legacyShape: {
     documentType?: WorkspaceDocumentContent["documentType"];
-    state?: WorkspaceDocumentContent["state"];
   } = document;
   return {
     ...document,
     spaceId: document.spaceId ?? null,
     documentType: legacyShape.documentType ?? "document-board",
-    state: legacyShape.state ?? "draft",
+    state: "published",
   };
 }
 

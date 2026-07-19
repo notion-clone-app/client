@@ -1,8 +1,8 @@
 # Workspace context
 
-`workspace` is the bounded context for authenticated collaboration surfaces. It owns workspace
-navigation, document identity, document metadata, local-first orchestration and the presentation of
-workspace document types. It also owns membership and the document release lifecycle.
+`workspace` composes authenticated workspace surfaces: navigation, spaces, members and document
+presentation. Immutable history is owned by the separate `document-versioning` context. Review is
+legacy prototype governance and is no longer part of the primary document flow.
 
 The module currently supports document boards and draw boards. Only document boards have an
 editable content surface; draw boards remain a routed placeholder.
@@ -14,12 +14,12 @@ Workspace owns:
 - document and workspace identifiers;
 - document title, cover and audit metadata;
 - the navigation tree and document type;
-- workspace spaces, covers, participants and draft/published navigation state;
+- workspace spaces, covers, participants and document navigation state;
 - optimistic application state;
 - persistence ports and the IndexedDB adapter;
 - workspace-specific page composition, routing and export.
 - workspace membership, invitations and roles;
-- review requests, comments, approvals and publication targets;
+- legacy review requests and publication targets while governance is being isolated;
 
 `shared/editor` owns only reusable editor capabilities:
 
@@ -31,9 +31,17 @@ Workspace owns:
 Shared editor code does not know about workspaces, users, revisions, IndexedDB, API routes or sync
 state. This is the extraction boundary for a future editor package.
 
+The editable surface keeps at most one empty trailing block. The add-block affordance appears only
+when the current tail has content; Enter cannot produce a chain of empty blocks or list items.
+Arrow navigation still includes the empty block, and Backspace on an already empty block removes it
+while moving focus to its nearest sibling. The last remaining empty editor surface is preserved so
+the document never becomes impossible to edit.
+
 ## Structure
 
 ```text
+document-versioning/         Independent revision context (domain → application ← infrastructure)
+
 workspace/
 ├── collaboration/           Members, invitations and approval policy
 ├── common/                  Workspace shell, header and sidebar
@@ -55,42 +63,32 @@ Dependencies point inward: UI and infrastructure depend on application/model con
 may depend on the portable `DocumentBlock` type, but shared editor code must never import workspace
 code.
 
-## Spaces and drafts
+## Spaces and documents
 
 The navigation model is space-first:
 
 ```text
 Workspace
 ├── Tech
-│   ├── Drafts
 │   └── folder/document tree
 └── Business
-    ├── Drafts
     └── folder/document tree
 ```
 
 The root workspace sidebar contains home, global search, spaces and settings. Entering a space
-switches to a contextual sidebar with Content, Drafts, Reviews, search and that space's pages. Every
-new document starts with `state: "draft"` and the owning `spaceId`, so unfinished content remains
-visible only inside its space.
+switches to a contextual sidebar with Content, search and that space's pages. `New page` creates a
+working copy immediately; ordinary editing has no draft or approval state.
 
 Spaces are shown both in the sidebar and on workspace home. User-created spaces are persisted in
 local storage by `useLocalWorkspaceSpaces`; document aggregates remain in the IndexedDB document
 repository. A fresh browser starts empty: the client does not inject example spaces, documents or
 reviews. A one-time migration removes identifiers belonging to the old prototype seeds.
 
-`WorkspaceSpace` is the aggregate root for the prototype navigation surface. It owns cover metadata
-and member references; documents and reviews carry `spaceId`. The Space page exposes `Content`,
-`Drafts` and `Reviews` as separate views, and review routes include the space ID explicitly. This
-prevents drafts, reviewers and publication targets from leaking across spaces.
+`WorkspaceSpace` owns cover metadata and member references; documents carry `spaceId`. Legacy
+review routes retain the space ID explicitly but are not linked from the ordinary workspace UI.
 
-A draft may also have `sourceDocumentId`. Such a draft is a working copy of an existing published
-document. Its review targets the source, and publication writes the approved content back as the
-next source revision. A draft without a source is published as a new document at its space root or
-under a selected folder.
-
-In the prototype, published documents act as placement targets. The backend model should introduce
-an explicit collection or board identity instead of overloading a document node with that role.
+Persisted `draft` records from the earlier prototype are migrated into regular visible documents on
+hydration. New documents use continuous editing and version checkpoints.
 
 ## Document representations
 
@@ -132,19 +130,34 @@ The shared block editor should remain unaware of that lifecycle.
 ## Search and page chrome
 
 The workspace shell has no global content header. `WorkspaceHeaderContent` is rendered only for a
-document route, where export, draft creation and review actions belong. Home, settings, spaces and
-reviews own their page-level headings.
+document route, where history, search and export actions belong. Home, settings and spaces own their
+page-level headings.
 
 Space search filters a single navigation tree while preserving folders whose descendants match.
 Global search flattens lightweight navigation nodes across spaces and opens as a command palette via
 the sidebar or `Cmd/Ctrl + K`. Search currently operates on local titles; backend search should add
 permissions-aware indexing and return lightweight navigation results, never full editor snapshots.
 
-## Document release lifecycle
+## Document version lifecycle
 
-Publishing is modeled separately from editing:
+The mutable document record is a continuously saved working copy. The `document-versioning` module
+captures immutable automatic and manual checkpoints in its own IndexedDB adapter. Restoring a
+checkpoint updates the working copy and creates another revision instead of rewriting history.
 
 ```text
+working copy → automatic/manual checkpoint → version history
+old checkpoint → restore → new checkpoint
+```
+
+`parentRevisionId` keeps the model ready for future change proposals without exposing branch,
+merge or rebase behavior today. See `docs/ARCHITECTURE_STYLE_GUIDE.md` for the dependency rules.
+
+## Legacy governance lifecycle
+
+The previous prototype modeled publishing separately from editing:
+
+```text
+new page → direct editing in space
 published revision → draft copy → review → next published revision
 new draft → review → new published space entry
 ```
@@ -163,6 +176,15 @@ Changes owns the block-level before/after diff and inline discussions. Each delt
 nearest blocks by default, can reveal more local context, and can open the full read-only draft
 snapshot. This follows GitLab's review flow while keeping the visual language compact and
 consistent with the rest of the workspace.
+
+The space review index is an active work queue: published reviews remain persisted but are omitted
+from this list. Status and relative-date filters are encoded in URL search parameters, pagination
+uses the same filtered result, and a changed filter resets the queue to its first page.
+
+Review creation is progressive: the user first selects a draft and reviewers, while the publication
+target is inferred from the source document or current space. Path and placement controls are kept
+behind `Advanced details`. Selection controls use the shared Radix-based dropdown presentation
+instead of browser-native selects.
 
 On a draft document, workspace maps review comments by stable `blockId` and renders them beside the
 corresponding editor block. The portable editor only exposes a neutral `renderBlockAside` extension

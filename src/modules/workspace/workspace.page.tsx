@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate, useParams } from "react-router";
-import { CopyPlus, Download, GitPullRequest, Search } from "lucide-react";
+import { Download, History, Search } from "lucide-react";
+import {
+  DocumentVersioningProvider,
+  indexedDbDocumentRevisionRepository,
+} from "@/modules/document-versioning";
 import { useSession } from "@/modules/identity";
 import { serializeBlocksToMarkdown } from "@/shared/editor";
 import {
   ROUTES,
+  workspaceDocumentHistoryPath,
   workspaceDocumentPath,
   workspaceSpacePath,
-  workspaceSpaceReviewCreatePath,
-  workspaceSpaceReviewsPath,
 } from "@/shared/model";
 import { Button } from "@/shared/ui/kit/button";
 import { useLocalWorkspaceCollaboration } from "./collaboration/application/use-local-workspace-collaboration";
@@ -56,12 +59,6 @@ const WorkspacePage = () => {
   const headerTitle = selectedDocument?.title ?? "Document";
   const activeSpaceId = spaceId ?? selectedDocument?.spaceId ?? null;
   const activeSpace = localSpaces.spaces.find((space) => space.id === activeSpaceId);
-  const activeSpaceView = location.pathname.includes("/reviews")
-    ? "reviews"
-    : new URLSearchParams(location.search).get("tab") === "drafts" ||
-        selectedDocument?.state === "draft"
-      ? "drafts"
-      : "content";
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -73,12 +70,6 @@ const WorkspacePage = () => {
     globalThis.addEventListener("keydown", handleKeyDown);
     return () => globalThis.removeEventListener("keydown", handleKeyDown);
   }, []);
-
-  const createDraftFromSelectedDocument = () => {
-    if (!selectedDocument) return;
-    const draft = localDocuments.createDraftFromDocument(selectedDocument.id);
-    if (draft) void navigate(workspaceDocumentPath(draft.id));
-  };
 
   const exportDocument = () => {
     if (selectedDocument?.type !== "document-board") return;
@@ -107,124 +98,109 @@ const WorkspacePage = () => {
   };
 
   return (
-    <WorkspaceLayout
-      asideNode={
-        viewer ? (
-          activeSpace ? (
-            <SpaceSidebarContent
-              space={activeSpace}
-              documents={localDocuments.documents}
-              selectedDocumentId={selectedDocument?.id ?? null}
-              activeView={activeSpaceView}
-              onBack={() => void navigate(ROUTES.WORKSPACE)}
-              onOpenSearch={() => setIsGlobalSearchOpen(true)}
-              onOpenView={(view) =>
-                void navigate(
-                  view === "reviews"
-                    ? workspaceSpaceReviewsPath(activeSpace.id)
-                    : `${workspaceSpacePath(activeSpace.id)}?tab=${view}`,
-                )
-              }
-              onOpenDocument={(document) => void navigate(workspaceDocumentPath(document.id))}
-              onCreateDocument={() => {
-                const document = localDocuments.createDocument(activeSpace.id);
-                if (document) void navigate(workspaceDocumentPath(document.id));
-              }}
-            />
-          ) : (
-            <WorkspaceSidebarContent
-              viewer={viewer}
-              spaces={localSpaces.spaces}
-              onOpenHome={() => void navigate(ROUTES.WORKSPACE)}
-              onOpenSearch={() => setIsGlobalSearchOpen(true)}
-              onOpenSpace={(id) => void navigate(workspaceSpacePath(id))}
-              onOpenSettings={() => void navigate(ROUTES.WORKSPACE_SETTINGS)}
-              activeSection={activeSection}
-              activeSpaceId={null}
-            />
-          )
-        ) : null
-      }
+    <DocumentVersioningProvider
+      workspaceId="local-workspace"
+      authorId={viewer?.id}
+      repository={indexedDbDocumentRevisionRepository}
     >
-      {selectedDocument && (
-        <WorkspaceHeaderContent>
-          <span className="grid size-7 place-items-center rounded-lg bg-primary text-xs font-semibold text-primary-foreground md:hidden">
-            N
-          </span>
-          <span className="ml-2 text-sm font-medium md:ml-0">{headerTitle}</span>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="ml-auto"
-            aria-label="Search document"
-            title="Search workspace"
-            onClick={() => setIsGlobalSearchOpen(true)}
-          >
-            <Search />
-          </Button>
-          {selectedDocument.type === "document-board" && (
-            <>
-              {selectedDocument.state === "published" && (
-                <Button variant="ghost" size="sm" onClick={createDraftFromSelectedDocument}>
-                  <CopyPlus />
-                  <span className="hidden sm:inline">Create draft</span>
-                </Button>
-              )}
-              {selectedDocument.state === "draft" && (
+      <WorkspaceLayout
+        asideNode={
+          viewer ? (
+            activeSpace ? (
+              <SpaceSidebarContent
+                space={activeSpace}
+                documents={localDocuments.documents}
+                selectedDocumentId={selectedDocument?.id ?? null}
+                onBack={() => void navigate(ROUTES.WORKSPACE)}
+                onOpenSearch={() => setIsGlobalSearchOpen(true)}
+                onOpenDocument={(document) => void navigate(workspaceDocumentPath(document.id))}
+                onCreatePage={() => {
+                  const document = localDocuments.createDocument(activeSpace.id);
+                  if (document) void navigate(workspaceDocumentPath(document.id));
+                }}
+              />
+            ) : (
+              <WorkspaceSidebarContent
+                viewer={viewer}
+                spaces={localSpaces.spaces}
+                onOpenHome={() => void navigate(ROUTES.WORKSPACE)}
+                onOpenSearch={() => setIsGlobalSearchOpen(true)}
+                onOpenSpace={(id) => void navigate(workspaceSpacePath(id))}
+                onOpenSettings={() => void navigate(ROUTES.WORKSPACE_SETTINGS)}
+                activeSection={activeSection}
+                activeSpaceId={null}
+              />
+            )
+          ) : null
+        }
+      >
+        {selectedDocument && (
+          <WorkspaceHeaderContent>
+            <span className="grid size-7 place-items-center rounded-lg bg-primary text-xs font-semibold text-primary-foreground md:hidden">
+              N
+            </span>
+            <span className="ml-2 text-sm font-medium md:ml-0">{headerTitle}</span>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="ml-auto"
+              aria-label="Search document"
+              title="Search workspace"
+              onClick={() => setIsGlobalSearchOpen(true)}
+            >
+              <Search />
+            </Button>
+            {selectedDocument.type === "document-board" && (
+              <>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() =>
-                    void navigate(
-                      `${workspaceSpaceReviewCreatePath(selectedDocument.spaceId ?? "business")}?documentId=${encodeURIComponent(selectedDocument.id)}`,
-                    )
-                  }
+                  onClick={() => void navigate(workspaceDocumentHistoryPath(selectedDocument.id))}
                 >
-                  <GitPullRequest />
-                  <span className="hidden sm:inline">Request review</span>
+                  <History />
+                  <span className="hidden sm:inline">History</span>
                 </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label="Export document"
-                onClick={exportDocument}
-              >
-                <Download />
-                <span className="hidden sm:inline">Export</span>
-              </Button>
-            </>
-          )}
-        </WorkspaceHeaderContent>
-      )}
-      <Outlet
-        context={{
-          documents: localDocuments.documents,
-          spaces: localSpaces.spaces,
-          isHydrated: localDocuments.isHydrated,
-          createSpace: localSpaces.createSpace,
-          updateSpaceCover: localSpaces.updateSpaceCover,
-          createDocument: localDocuments.createDocument,
-          createDraftFromDocument: localDocuments.createDraftFromDocument,
-          publishDraftToSource: localDocuments.publishDraftToSource,
-          getDocumentContent: localDocuments.getDocumentContent,
-          updateDocument: localDocuments.updateDocument,
-          ...collaboration,
-          placeDocument: localDocuments.placeDocument,
-          publishReview,
-        }}
-      />
-      <GlobalDocumentSearch
-        open={isGlobalSearchOpen}
-        documents={localDocuments.documents}
-        spaces={localSpaces.spaces}
-        onClose={() => setIsGlobalSearchOpen(false)}
-        onSelect={(document) => {
-          setIsGlobalSearchOpen(false);
-          void navigate(workspaceDocumentPath(document.id));
-        }}
-      />
-    </WorkspaceLayout>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Export document"
+                  onClick={exportDocument}
+                >
+                  <Download />
+                  <span className="hidden sm:inline">Export</span>
+                </Button>
+              </>
+            )}
+          </WorkspaceHeaderContent>
+        )}
+        <Outlet
+          context={{
+            documents: localDocuments.documents,
+            spaces: localSpaces.spaces,
+            isHydrated: localDocuments.isHydrated,
+            createSpace: localSpaces.createSpace,
+            updateSpaceCover: localSpaces.updateSpaceCover,
+            createDocument: localDocuments.createDocument,
+            publishDraftToSource: localDocuments.publishDraftToSource,
+            getDocumentContent: localDocuments.getDocumentContent,
+            updateDocument: localDocuments.updateDocument,
+            ...collaboration,
+            placeDocument: localDocuments.placeDocument,
+            publishReview,
+          }}
+        />
+        <GlobalDocumentSearch
+          open={isGlobalSearchOpen}
+          documents={localDocuments.documents}
+          spaces={localSpaces.spaces}
+          onClose={() => setIsGlobalSearchOpen(false)}
+          onSelect={(document) => {
+            setIsGlobalSearchOpen(false);
+            void navigate(workspaceDocumentPath(document.id));
+          }}
+        />
+      </WorkspaceLayout>
+    </DocumentVersioningProvider>
   );
 };
 

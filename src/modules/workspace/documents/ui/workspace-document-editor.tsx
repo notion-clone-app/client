@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ChangeEvent } from "react";
-import { MessageSquare, Upload, X } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { BlockEditor } from "@/shared/editor";
 import { Button } from "@/shared/ui/kit/button";
 import type { WorkspaceDocumentContent } from "../model/workspace-document-content.entity";
@@ -7,25 +7,13 @@ import type { WorkspaceDocumentContent } from "../model/workspace-document-conte
 type WorkspaceDocumentEditorProps = Readonly<{
   document: WorkspaceDocumentContent;
   onChange: (document: WorkspaceDocumentContent) => void;
-  commentsByBlockId?: ReadonlyMap<string, readonly WorkspaceBlockComment[]>;
-}>;
-
-type WorkspaceBlockComment = Readonly<{
-  id: string;
-  authorName: string;
-  body: string;
-  resolved: boolean;
 }>;
 
 /**
  * Composes the portable block editor with workspace-owned page chrome.
  * Title, cover, audit metadata and persistence remain outside shared editor code.
  */
-export function WorkspaceDocumentEditor({
-  document,
-  onChange,
-  commentsByBlockId,
-}: WorkspaceDocumentEditorProps) {
+export function WorkspaceDocumentEditor({ document, onChange }: WorkspaceDocumentEditorProps) {
   const rootRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -119,29 +107,6 @@ export function WorkspaceDocumentEditor({
           blocks={document.blocks}
           onChange={(blocks) => updateDocument({ blocks })}
           onNavigateBefore={() => titleRef.current?.focus()}
-          renderBlockAside={(block) => {
-            const comments = commentsByBlockId?.get(block.id);
-            if (!comments?.length) return null;
-            return (
-              <aside className="mt-2 ml-8 w-[calc(100%-2rem)] basis-full space-y-2 md:absolute md:top-0 md:left-full md:mt-0 md:ml-5 md:w-64">
-                {comments.map((comment) => (
-                  <div
-                    key={comment.id}
-                    className="rounded-xl border border-border/70 bg-popover p-3 shadow-sm"
-                  >
-                    <div className="flex items-center gap-2 text-[11px] font-medium">
-                      <MessageSquare className="size-3.5 text-muted-foreground" />
-                      <span className="truncate">{comment.authorName}</span>
-                      {comment.resolved && (
-                        <span className="ml-auto text-emerald-700">Resolved</span>
-                      )}
-                    </div>
-                    <p className="mt-2 text-xs leading-5 text-foreground/80">{comment.body}</p>
-                  </div>
-                ))}
-              </aside>
-            );
-          }}
         />
       </div>
     </article>

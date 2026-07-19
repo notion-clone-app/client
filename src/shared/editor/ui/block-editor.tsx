@@ -87,7 +87,8 @@ export function BlockEditor({
 
   const insertParagraphAfter = (blockId: string) => {
     const index = blocks.findIndex((block) => block.id === blockId);
-    if (index < 0) return;
+    const currentBlock = blocks[index];
+    if (!currentBlock || isBlockEmpty(currentBlock)) return;
 
     const paragraph = createParagraphBlock();
     pendingFocusBlockIdRef.current = paragraph.id;
@@ -96,10 +97,36 @@ export function BlockEditor({
   };
 
   const appendParagraph = () => {
+    const lastBlock = blocks.at(-1);
+    if (lastBlock && isBlockEmpty(lastBlock)) return;
+
     const paragraph = createParagraphBlock();
     pendingFocusBlockIdRef.current = paragraph.id;
     setSelectedBlockId(null);
     onChange([...blocks, paragraph]);
+  };
+
+  const deleteEmptyBlock = (blockId: string) => {
+    const index = blocks.findIndex((block) => block.id === blockId);
+    const currentBlock = blocks[index];
+    if (!currentBlock || !isBlockEmpty(currentBlock)) return;
+
+    if (blocks.length === 1) {
+      if (currentBlock.type === "paragraph") return;
+
+      const paragraph = createParagraphBlock();
+      pendingFocusBlockIdRef.current = paragraph.id;
+      setSelectedBlockId(null);
+      setAiBlockId(null);
+      onChange([paragraph]);
+      return;
+    }
+
+    const focusTarget = blocks[index - 1] ?? blocks[index + 1];
+    pendingFocusBlockIdRef.current = focusTarget?.id ?? null;
+    setSelectedBlockId(null);
+    setAiBlockId(null);
+    onChange(blocks.filter((block) => block.id !== blockId));
   };
 
   const applyCommand = (block: DocumentBlock, commandId: BlockCommandId) => {
@@ -176,6 +203,7 @@ export function BlockEditor({
                   <OptionsRenderer
                     block={block}
                     onChange={replaceBlock}
+                    onDeleteEmpty={deleteEmptyBlock}
                     onInsertAfter={insertParagraphAfter}
                     onTextSelectionChange={() => undefined}
                   />
@@ -218,6 +246,7 @@ export function BlockEditor({
                 <Renderer
                   block={block}
                   onChange={replaceBlock}
+                  onDeleteEmpty={deleteEmptyBlock}
                   onInsertAfter={insertParagraphAfter}
                   onTextSelectionChange={(blockId, hasSelection) => {
                     setSelectedBlockId(hasSelection ? blockId : null);
@@ -243,14 +272,16 @@ export function BlockEditor({
         })}
       </div>
 
-      <button
-        type="button"
-        className="group/add mt-3 flex w-full items-center gap-2 rounded-lg py-3 pl-7 text-left text-sm text-muted-foreground/35 transition-colors hover:bg-muted/40 hover:text-muted-foreground focus-visible:bg-muted/40 focus-visible:text-muted-foreground focus-visible:outline-none"
-        onClick={appendParagraph}
-      >
-        <Plus className="size-4 opacity-0 transition-opacity group-hover/add:opacity-100 group-focus-visible/add:opacity-100" />
-        Click to add a block
-      </button>
+      {(blocks.length === 0 || !isBlockEmpty(blocks.at(-1)!)) && (
+        <button
+          type="button"
+          className="group/add mt-3 flex w-full items-center gap-2 rounded-lg py-3 pl-7 text-left text-sm text-muted-foreground/35 transition-colors hover:bg-muted/40 hover:text-muted-foreground focus-visible:bg-muted/40 focus-visible:text-muted-foreground focus-visible:outline-none"
+          onClick={appendParagraph}
+        >
+          <Plus className="size-4 opacity-0 transition-opacity group-hover/add:opacity-100 group-focus-visible/add:opacity-100" />
+          Click to add a block
+        </button>
+      )}
     </section>
   );
 }
@@ -377,6 +408,14 @@ function createParagraphBlock(): DocumentBlock {
     options: { bold: false, italic: false },
     content: "",
   };
+}
+
+function isBlockEmpty(block: DocumentBlock) {
+  if (block.type === "list") {
+    return block.items.every((item) => item.content.trim().length === 0);
+  }
+
+  return block.content.trim().length === 0;
 }
 
 function createBlockFromCommand(id: string, commandId: BlockCommandId): DocumentBlock {

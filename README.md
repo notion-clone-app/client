@@ -5,6 +5,9 @@ the marketing website, cookie-based authentication, protected routing, and the i
 context. The codebase is organized around business contexts so documents, permissions, SSO, and
 additional applications can evolve without turning the UI into one global feature tree.
 
+Architecture boundaries, layer rules and naming conventions are defined in the
+[client architecture style guide](docs/ARCHITECTURE_STYLE_GUIDE.md).
+
 ## Technology
 
 - React 19 and TypeScript

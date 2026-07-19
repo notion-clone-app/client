@@ -33,6 +33,24 @@ function ControlledEditor() {
   return <BlockEditor blocks={blocks} onChange={setBlocks} />;
 }
 
+function EditorWithEmptyList() {
+  const [blocks, setBlocks] = useState<readonly DocumentBlock[]>([
+    {
+      id: "empty-list",
+      type: "list",
+      options: { style: "bullet" },
+      items: [{ id: "empty-item", content: "" }],
+    },
+    {
+      id: "paragraph-after-list",
+      type: "paragraph",
+      options: { bold: false, italic: false },
+      content: "After list",
+    },
+  ]);
+  return <BlockEditor blocks={blocks} onChange={setBlocks} />;
+}
+
 describe("BlockEditor", () => {
   it("edits a paragraph through controlled state", async () => {
     const user = userEvent.setup();
@@ -122,6 +140,56 @@ describe("BlockEditor", () => {
     const paragraphs = screen.getAllByRole("textbox", { name: "Paragraph" });
     expect(paragraphs).toHaveLength(2);
     expect(paragraphs.at(-1)).toHaveFocus();
+    expect(screen.queryByRole("button", { name: "Click to add a block" })).not.toBeInTheDocument();
+  });
+
+  it("does not create another block after an empty block", async () => {
+    const user = userEvent.setup();
+    render(<ControlledEditor />);
+
+    await user.click(screen.getByRole("button", { name: "Click to add a block" }));
+    await user.keyboard("{Enter}{Enter}");
+
+    expect(screen.getAllByRole("textbox", { name: "Paragraph" })).toHaveLength(2);
+  });
+
+  it("navigates from an empty block and deletes it with Backspace", async () => {
+    const user = userEvent.setup();
+    render(<ControlledEditor />);
+
+    await user.click(screen.getByRole("button", { name: "Click to add a block" }));
+    await user.keyboard("{ArrowUp}");
+    expect(screen.getByRole("textbox", { name: "List item 1" })).toHaveFocus();
+
+    await user.click(screen.getAllByRole("textbox", { name: "Paragraph" }).at(-1)!);
+    await user.keyboard("{Backspace}");
+
+    expect(screen.getAllByRole("textbox", { name: "Paragraph" })).toHaveLength(1);
+    expect(screen.getByRole("textbox", { name: "List item 1" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Click to add a block" })).toBeInTheDocument();
+  });
+
+  it("removes an empty list item with Backspace and keeps the list focused", async () => {
+    const user = userEvent.setup();
+    render(<ControlledEditor />);
+
+    const secondItem = screen.getByRole("textbox", { name: "List item 2" });
+    await user.clear(secondItem);
+    await user.keyboard("{Backspace}");
+
+    expect(screen.queryByRole("textbox", { name: "List item 2" })).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "List item 1" })).toHaveFocus();
+  });
+
+  it("removes a list block when its only item is empty", async () => {
+    const user = userEvent.setup();
+    render(<EditorWithEmptyList />);
+
+    await user.click(screen.getByRole("textbox", { name: "List item 1" }));
+    await user.keyboard("{Backspace}");
+
+    expect(screen.queryByRole("textbox", { name: "List item 1" })).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Paragraph" })).toHaveFocus();
   });
 
   it("navigates between document blocks with arrow keys", async () => {

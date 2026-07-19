@@ -1,6 +1,12 @@
 import { useState, type FormEvent } from "react";
-import { Check, MailPlus, Settings, ShieldCheck, Users } from "lucide-react";
+import { Check, ChevronDown, MailPlus, Settings, Users } from "lucide-react";
 import { Button } from "@/shared/ui/kit/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/shared/ui/kit/dropdown-menu";
 import type { WorkspaceMemberRole } from "../collaboration/model/workspace-member.entity";
 import { useWorkspaceContext } from "../workspace.context";
 
@@ -24,7 +30,7 @@ const SettingsPage = () => {
         </div>
         <h1 className="text-3xl font-semibold tracking-[-0.035em]">Workspace settings</h1>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Manage workspace identity, members and document approval rules.
+          Manage workspace identity and members.
         </p>
       </div>
 
@@ -44,16 +50,21 @@ const SettingsPage = () => {
               className="h-10 min-w-0 flex-1 rounded-xl border border-border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/20"
               onChange={(event) => setEmail(event.target.value)}
             />
-            <select
-              value={role}
-              aria-label="Member role"
-              className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none"
-              onChange={(event) => setRole(event.target.value as WorkspaceMemberRole)}
-            >
-              <option value="editor">Editor</option>
-              <option value="reviewer">Reviewer</option>
-              <option value="viewer">Viewer</option>
-            </select>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="outline" className="justify-between sm:w-36">
+                  <span className="capitalize">{role}</span> <ChevronDown />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                {(["editor", "reviewer", "viewer"] as const).map((item) => (
+                  <DropdownMenuItem key={item} onSelect={() => setRole(item)}>
+                    <span className="flex-1 capitalize">{item}</span>
+                    {role === item && <Check />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button type="submit">
               <MailPlus /> Invite
             </Button>
@@ -83,33 +94,6 @@ const SettingsPage = () => {
             ))}
           </div>
         </SettingsSection>
-
-        <SettingsSection
-          icon={ShieldCheck}
-          title="Document approvals"
-          description="Local policy applied before a review can be published."
-        >
-          <div className="space-y-3">
-            <PolicyRow
-              title="Required approvals"
-              description="Minimum number of reviewer approvals."
-              value={`${workspace.approvalSettings.requiredApprovals}`}
-            />
-            <PolicyRow
-              title="Resolve comments"
-              description="Block publishing while review comments remain open."
-              value={workspace.approvalSettings.requireResolvedComments ? "Required" : "Optional"}
-            />
-            <PolicyRow
-              title="Author approval"
-              description="Allow the document author to satisfy the approval rule."
-              value={workspace.approvalSettings.authorCanApprove ? "Allowed" : "Not allowed"}
-            />
-          </div>
-          <p className="mt-4 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <Check className="size-3" /> Stored locally with workspace collaboration state
-          </p>
-        </SettingsSection>
       </div>
     </main>
   );
@@ -136,26 +120,6 @@ function SettingsSection({
       </div>
       <div className="rounded-2xl border border-border bg-card p-5">{children}</div>
     </section>
-  );
-}
-
-function PolicyRow({
-  title,
-  description,
-  value,
-}: {
-  title: string;
-  description: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-xl bg-muted/40 px-3 py-3">
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium">{title}</span>
-        <span className="block text-xs text-muted-foreground">{description}</span>
-      </span>
-      <span className="text-xs font-medium">{value}</span>
-    </div>
   );
 }
 

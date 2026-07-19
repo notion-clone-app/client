@@ -50,6 +50,17 @@ export default defineConfig([
     },
   },
   {
+    files: ["src/modules/document-versioning/{domain,application}/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: ["react", "react/*", "react-router", "@tanstack/*", "@/shared/ui/*"],
+        },
+      ],
+    },
+  },
+  {
     files: ["src/shared/ui/{typography,kit/card}.tsx"],
     rules: {
       "jsx-a11y/heading-has-content": "off",

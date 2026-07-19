@@ -1,12 +1,11 @@
 import { useRef, type ChangeEvent } from "react";
 import { Navigate, useNavigate, useParams, useSearchParams } from "react-router";
-import { Layers3, Plus, Search, Upload, X } from "lucide-react";
+import { FilePlus2, Layers3, Search, Upload, X } from "lucide-react";
 import { ROUTES, workspaceDocumentPath } from "@/shared/model";
 import { Button } from "@/shared/ui/kit/button";
 import { useWorkspaceContext } from "../workspace.context";
 import { filterWorkspaceDocumentTree } from "./model/workspace-document-tree";
 import { DocumentTree } from "./ui/document-tree";
-import { SpaceTabs } from "../spaces/ui/space-tabs";
 
 const SpacePage = () => {
   const { spaceId } = useParams<"spaceId">();
@@ -18,22 +17,14 @@ const SpacePage = () => {
 
   if (!space) return <Navigate to={ROUTES.WORKSPACE} replace />;
 
-  const activeTab = searchParams.get("tab") === "drafts" ? "drafts" : "content";
   const query = searchParams.get("q") ?? "";
-  const publishedDocuments = workspace.documents.filter(
+  const documents = workspace.documents.filter(
     (document) => document.state === "published" && document.spaceId === space.id,
   );
-  const drafts = workspace.documents.filter(
-    (document) => document.state === "draft" && document.spaceId === space.id,
-  );
-  const visibleDocuments = filterWorkspaceDocumentTree(
-    activeTab === "drafts" ? drafts : publishedDocuments,
-    query,
-  );
-  const reviews = workspace.reviews.filter((review) => review.spaceId === space.id);
+  const visibleDocuments = filterWorkspaceDocumentTree(documents, query);
   const members = workspace.members.filter((member) => space.memberIds.includes(member.id));
 
-  const createDraft = () => {
+  const createDocument = () => {
     const document = workspace.createDocument(space.id);
     if (document) void navigate(workspaceDocumentPath(document.id));
   };
@@ -109,27 +100,18 @@ const SpacePage = () => {
                 <Upload /> Add cover
               </Button>
             )}
-            <Button onClick={createDraft}>
-              <Plus /> New draft
+            <Button onClick={createDocument}>
+              <FilePlus2 /> New page
             </Button>
           </div>
         </div>
 
-        <div className="mt-10">
-          <SpaceTabs
-            spaceId={space.id}
-            active={activeTab}
-            draftCount={drafts.length}
-            reviewCount={reviews.length}
-          />
-        </div>
-
-        <div className="mt-6 flex h-11 max-w-xl items-center gap-3 rounded-xl bg-muted/60 px-3">
+        <div className="mt-10 flex h-10 max-w-xl items-center gap-2 rounded-xl bg-muted/55 px-3">
           <Search className="size-4 text-muted-foreground" />
           <input
             value={query}
-            aria-label={`Search ${activeTab} in ${space.title}`}
-            placeholder={`Search ${activeTab} in ${space.title}`}
+            aria-label={`Search content in ${space.title}`}
+            placeholder="Search content"
             className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             onChange={(event) => {
               const next = new URLSearchParams(searchParams);
@@ -143,7 +125,7 @@ const SpacePage = () => {
         <section aria-labelledby="space-tree" className="mt-7">
           <div className="mb-3 flex items-center gap-3">
             <h2 id="space-tree" className="text-sm font-medium">
-              {activeTab === "drafts" ? "Draft documents" : "Published content"}
+              Documents
             </h2>
             <span className="text-xs text-muted-foreground">{visibleDocuments.length}</span>
           </div>
@@ -155,7 +137,7 @@ const SpacePage = () => {
             />
           ) : (
             <div className="border-t border-border px-2 py-12 text-sm text-muted-foreground">
-              {query ? "No documents match this search." : `No ${activeTab} in this space yet.`}
+              {query ? "No documents match this search." : "No documents in this space yet."}
             </div>
           )}
         </section>

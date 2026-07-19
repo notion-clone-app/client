@@ -1,10 +1,12 @@
 import type { WorkspaceDocumentContent } from "./workspace-document-content.entity";
+import type { WorkspaceDocumentState } from "./workspace-document.entity";
 
 type CreateEmptyWorkspaceDocumentOptions = Readonly<{
   id?: string;
   workspaceId: string;
   spaceId: string;
   authorId: string;
+  state?: WorkspaceDocumentState;
   now?: string;
 }>;
 
@@ -14,6 +16,7 @@ export function createEmptyWorkspaceDocument({
   workspaceId,
   spaceId,
   authorId,
+  state = "published",
   now = new Date().toISOString(),
 }: CreateEmptyWorkspaceDocumentOptions): WorkspaceDocumentContent {
   return {
@@ -22,7 +25,7 @@ export function createEmptyWorkspaceDocument({
     workspaceId,
     spaceId,
     documentType: "document-board",
-    state: "draft",
+    state,
     title: "",
     metadata: {
       revision: 0,

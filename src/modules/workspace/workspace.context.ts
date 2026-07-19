@@ -11,7 +11,6 @@ export type WorkspaceContext = Readonly<{
   createSpace: (title: string) => WorkspaceSpace | null;
   updateSpaceCover: (spaceId: string, coverImage: string | undefined) => void;
   createDocument: (spaceId: string) => WorkspaceDocumentContent | null;
-  createDraftFromDocument: (documentId: string) => WorkspaceDocumentContent | null;
   publishDraftToSource: (draftId: string) => void;
   getDocumentContent: (document: WorkspaceDocument) => WorkspaceDocumentContent;
   updateDocument: (document: WorkspaceDocumentContent) => void;
