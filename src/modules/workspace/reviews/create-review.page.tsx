@@ -1,30 +1,46 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { Navigate, useNavigate, useParams, useSearchParams } from "react-router";
 import { ArrowLeft, GitPullRequest, MapPin, Users } from "lucide-react";
-import { ROUTES, workspaceReviewPath } from "@/shared/model";
+import { ROUTES, workspaceReviewPath, workspaceSpaceReviewsPath } from "@/shared/model";
 import { Button } from "@/shared/ui/kit/button";
 import type { WorkspaceDocument } from "../documents/model/workspace-document.entity";
+import { flattenWorkspaceDocuments } from "../documents/model/workspace-document-tree";
 import { useWorkspaceContext } from "../workspace.context";
-import { createDocumentReviewChanges } from "./application/create-document-review-changes";
+import {
+  createDocumentReviewChanges,
+  createDocumentReviewSnapshots,
+} from "./application/create-document-review-changes";
 
 const CreateReviewPage = () => {
   const navigate = useNavigate();
+  const { spaceId } = useParams<"spaceId">();
   const [searchParams] = useSearchParams();
   const workspace = useWorkspaceContext();
-  const allDocuments = flattenDocuments(workspace.documents);
+  const space = workspace.spaces.find((candidate) => candidate.id === spaceId);
+  const allDocuments = flattenWorkspaceDocuments(workspace.documents);
   const documents = allDocuments.filter(
-    (document) => document.type === "document-board" && document.state === "draft",
+    (document) =>
+      document.type === "document-board" &&
+      document.state === "draft" &&
+      document.spaceId === spaceId,
   );
   const targetBoards: readonly WorkspaceDocument[] = [
-    ...workspace.spaces.map((space) => ({
-      id: space.id,
-      title: space.title,
-      type: "folder" as const,
-      state: "published" as const,
-      spaceId: space.id,
-    })),
+    ...(space
+      ? [
+          {
+            id: space.id,
+            title: space.title,
+            type: "folder" as const,
+            state: "published" as const,
+            spaceId: space.id,
+          },
+        ]
+      : []),
     ...allDocuments.filter(
-      (document) => document.type === "folder" && document.state === "published",
+      (document) =>
+        document.type === "folder" &&
+        document.state === "published" &&
+        document.spaceId === spaceId,
     ),
   ];
   const requestedDocumentId = searchParams.get("documentId");
@@ -49,9 +65,13 @@ const CreateReviewPage = () => {
       : "Add as the last child page in this section.",
   );
   const [reviewerIds, setReviewerIds] = useState<readonly string[]>(
-    workspace.members.filter((member) => member.role === "reviewer").map((member) => member.id),
+    workspace.members
+      .filter((member) => member.role === "reviewer" && space?.memberIds.includes(member.id))
+      .map((member) => member.id),
   );
   const selectedDocument = documents.find((document) => document.id === documentId);
+
+  if (!space) return <Navigate to={ROUTES.WORKSPACE} replace />;
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -65,6 +85,7 @@ const CreateReviewPage = () => {
     const sourceContent = source ? workspace.getDocumentContent(source) : null;
 
     const review = workspace.createReview({
+      spaceId: space.id,
       documentId: document.id,
       documentTitle: document.title,
       authorId: workspace.members[0]?.id ?? "current-user",
@@ -78,13 +99,18 @@ const CreateReviewPage = () => {
       },
       reviewerIds,
       changes: createDocumentReviewChanges(sourceContent, draftContent),
+      snapshots: createDocumentReviewSnapshots(sourceContent, draftContent),
     });
-    void navigate(workspaceReviewPath(review.id));
+    void navigate(workspaceReviewPath(space.id, review.id));
   };
 
   return (
     <main className="mx-auto w-full max-w-3xl px-5 py-10 sm:px-8 md:py-14">
-      <Button variant="ghost" size="sm" onClick={() => void navigate(ROUTES.WORKSPACE_REVIEWS)}>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => void navigate(workspaceSpaceReviewsPath(space.id))}
+      >
         <ArrowLeft /> Reviews
       </Button>
 
@@ -101,8 +127,7 @@ const CreateReviewPage = () => {
       <form className="mt-9 space-y-5" onSubmit={submit}>
         {!documents.length && (
           <div className="rounded-2xl border border-dashed border-border bg-muted/30 px-5 py-4 text-sm leading-6 text-muted-foreground">
-            There are no drafts to review. Create a document from the Drafts section in the sidebar
-            first.
+            There are no drafts to review in this space yet.
           </div>
         )}
         <Field label="Document">
@@ -204,7 +229,12 @@ const CreateReviewPage = () => {
           </div>
           <div className="mt-3 space-y-1">
             {workspace.members
-              .filter((member) => member.status === "active" && member.role !== "owner")
+              .filter(
+                (member) =>
+                  member.status === "active" &&
+                  member.role !== "owner" &&
+                  space.memberIds.includes(member.id),
+              )
               .map((member) => (
                 <label
                   key={member.id}
@@ -237,7 +267,7 @@ const CreateReviewPage = () => {
           <Button
             type="button"
             variant="ghost"
-            onClick={() => void navigate(ROUTES.WORKSPACE_REVIEWS)}
+            onClick={() => void navigate(workspaceSpaceReviewsPath(space.id))}
           >
             Cancel
           </Button>
@@ -260,13 +290,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {children}
     </label>
   );
-}
-
-function flattenDocuments(documents: readonly WorkspaceDocument[]): readonly WorkspaceDocument[] {
-  return documents.flatMap((document) => [
-    document,
-    ...(document.children ? flattenDocuments(document.children) : []),
-  ]);
 }
 
 function initials(name: string) {

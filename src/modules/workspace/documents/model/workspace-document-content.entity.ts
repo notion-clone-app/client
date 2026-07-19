@@ -1,6 +1,7 @@
 import type { DocumentBlock } from "@/shared/editor";
+import type { WorkspaceDocumentState, WorkspaceDocumentType } from "./workspace-document.entity";
 
-export type WorkspaceDocumentMetadata = Readonly<{
+type WorkspaceDocumentMetadata = Readonly<{
   revision: number;
   createdAt: string;
   updatedAt: string;
@@ -19,6 +20,9 @@ export type WorkspaceDocumentContent = Readonly<{
   id: string;
   workspaceId: string;
   spaceId: string | null;
+  documentType: WorkspaceDocumentType;
+  state: WorkspaceDocumentState;
+  parentDocumentId?: string | undefined;
   /** Published document this draft was forked from. */
   sourceDocumentId?: string | undefined;
   title: string;

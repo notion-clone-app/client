@@ -21,11 +21,13 @@ const DocumentPage = () => {
   const Icon = presentation.icon;
 
   if (document.type === "document-board") {
+    const commentsByBlockId = createBlockComments(document.id, workspace);
     return (
       <DocumentBoardEditor
         key={document.id}
         document={workspace.getDocumentContent(document)}
         onChange={workspace.updateDocument}
+        commentsByBlockId={commentsByBlockId}
       />
     );
   }
@@ -47,11 +49,52 @@ const DocumentPage = () => {
 function DocumentBoardEditor({
   document,
   onChange,
+  commentsByBlockId,
 }: {
   document: WorkspaceDocumentContent;
   onChange: (document: WorkspaceDocumentContent) => void;
+  commentsByBlockId: ReadonlyMap<
+    string,
+    readonly { id: string; authorName: string; body: string; resolved: boolean }[]
+  >;
 }) {
-  return <WorkspaceDocumentEditor document={document} onChange={onChange} />;
+  return (
+    <WorkspaceDocumentEditor
+      document={document}
+      onChange={onChange}
+      commentsByBlockId={commentsByBlockId}
+    />
+  );
+}
+
+function createBlockComments(
+  documentId: string,
+  workspace: ReturnType<typeof useWorkspaceContext>,
+) {
+  const comments = new Map<
+    string,
+    readonly { id: string; authorName: string; body: string; resolved: boolean }[]
+  >();
+  const review = workspace.reviews.find(
+    (candidate) => candidate.documentId === documentId && candidate.status !== "published",
+  );
+  if (!review) return comments;
+
+  for (const change of review.changes) {
+    if (!change.blockId || !change.comments.length) continue;
+    comments.set(
+      change.blockId,
+      change.comments.map((comment) => ({
+        id: comment.id,
+        authorName:
+          workspace.members.find((member) => member.id === comment.authorId)?.name ??
+          "Workspace member",
+        body: comment.body,
+        resolved: comment.resolved,
+      })),
+    );
+  }
+  return comments;
 }
 
 export const Component = DocumentPage;

@@ -1,12 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createDemoDocumentBoard } from "../demo-document-board";
 import { createEmptyWorkspaceDocument } from "../model/create-empty-workspace-document";
 import type { WorkspaceDocumentContent } from "../model/workspace-document-content.entity";
 import type { WorkspaceDocument } from "../model/workspace-document.entity";
-import { demoWorkspaceDocuments, findWorkspaceDocument } from "../workspace-documents";
+import { findWorkspaceDocument } from "../workspace-documents";
 import type { WorkspaceDocumentRepository } from "./workspace-document.repository";
 
 const localWorkspaceId = "local-workspace";
+const legacySeedDocumentIds = new Set([
+  "release-notes-draft",
+  "product",
+  "product-notes",
+  "roadmap",
+  "research",
+  "engineering",
+  "architecture",
+  "decisions",
+  "ideas",
+]);
 
 /**
  * Coordinates optimistic workspace document state with a replaceable persistence adapter.
@@ -17,7 +27,6 @@ export function useLocalWorkspaceDocuments(
   repository: WorkspaceDocumentRepository,
 ) {
   const [localDocuments, setLocalDocuments] = useState<readonly WorkspaceDocumentContent[]>([]);
-  const [publishedTargets, setPublishedTargets] = useState<ReadonlyMap<string, string>>(new Map());
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
@@ -27,13 +36,21 @@ export function useLocalWorkspaceDocuments(
       .list(localWorkspaceId)
       .then((documents) => {
         if (isCurrent) {
-          const migratedDocuments = documents.map(migrateLocalDocument);
+          const legacyDocuments = documents.filter((document) =>
+            legacySeedDocumentIds.has(document.id),
+          );
+          const migratedDocuments = documents
+            .filter((document) => !legacySeedDocumentIds.has(document.id))
+            .map(migrateLocalDocument);
           setLocalDocuments((current) => [
             ...current,
             ...migratedDocuments.filter(
               (document) => !current.some((candidate) => candidate.id === document.id),
             ),
           ]);
+          void Promise.all(legacyDocuments.map((document) => repository.remove(document.id))).catch(
+            (error: unknown) => console.error("Failed to remove legacy seed documents", error),
+          );
         }
       })
       .catch((error: unknown) => {
@@ -53,21 +70,10 @@ export function useLocalWorkspaceDocuments(
     [localDocuments],
   );
 
-  const documents = useMemo(() => {
-    const updatedDemoDocuments = mergeLocalTitles(demoWorkspaceDocuments, localDocumentById);
-    const createdDocuments = localDocuments
-      .filter((document) => !findWorkspaceDocument(demoWorkspaceDocuments, document.id))
-      .map(toWorkspaceDocument);
-
-    const documentTree: readonly WorkspaceDocument[] = [
-      ...createdDocuments,
-      ...updatedDemoDocuments,
-    ];
-    return [...publishedTargets].reduce<readonly WorkspaceDocument[]>(
-      (current, [documentId, targetId]) => placeWorkspaceDocument(current, documentId, targetId),
-      documentTree,
-    );
-  }, [localDocumentById, localDocuments, publishedTargets]);
+  const documents = useMemo(
+    () => buildDocumentTree(localDocuments.map(toWorkspaceDocument)),
+    [localDocuments],
+  );
 
   const updateDocument = useCallback(
     (document: WorkspaceDocumentContent) => {
@@ -105,11 +111,13 @@ export function useLocalWorkspaceDocuments(
         return null;
       }
 
-      const source = localDocumentById.get(documentId) ?? createDemoDocumentBoard(sourceNode);
+      const source = localDocumentById.get(documentId);
+      if (!source) return null;
       const now = new Date().toISOString();
       const draft: WorkspaceDocumentContent = {
         ...source,
         id: crypto.randomUUID(),
+        state: "draft",
         spaceId: sourceNode.spaceId,
         sourceDocumentId: source.id,
         metadata: {
@@ -132,7 +140,8 @@ export function useLocalWorkspaceDocuments(
       if (!draft?.sourceDocumentId) return;
       const sourceNode = findWorkspaceDocument(documents, draft.sourceDocumentId);
       if (!sourceNode) return;
-      const source = localDocumentById.get(sourceNode.id) ?? createDemoDocumentBoard(sourceNode);
+      const source = localDocumentById.get(sourceNode.id);
+      if (!source) return;
       const published: WorkspaceDocumentContent = {
         ...draft,
         id: source.id,
@@ -157,14 +166,34 @@ export function useLocalWorkspaceDocuments(
   );
 
   const getDocumentContent = useCallback(
-    (document: WorkspaceDocument) =>
-      localDocumentById.get(document.id) ?? createDemoDocumentBoard(document),
+    (document: WorkspaceDocument) => {
+      const content = localDocumentById.get(document.id);
+      if (!content) throw new Error(`Missing local document content for ${document.id}`);
+      return content;
+    },
     [localDocumentById],
   );
 
-  const placeDocument = useCallback((documentId: string, targetId: string) => {
-    setPublishedTargets((current) => new Map(current).set(documentId, targetId));
-  }, []);
+  const placeDocument = useCallback(
+    (documentId: string, targetId: string) => {
+      const document = localDocumentById.get(documentId);
+      if (!document) return;
+      const target = findWorkspaceDocument(documents, targetId);
+      updateDocument({
+        ...document,
+        state: "published",
+        spaceId: target?.spaceId ?? targetId,
+        parentDocumentId: target ? target.id : undefined,
+        sourceDocumentId: undefined,
+        metadata: {
+          ...document.metadata,
+          revision: Math.max(1, document.metadata.revision),
+          updatedAt: new Date().toISOString(),
+        },
+      });
+    },
+    [documents, localDocumentById, updateDocument],
+  );
 
   return {
     documents,
@@ -179,89 +208,46 @@ export function useLocalWorkspaceDocuments(
 }
 
 function migrateLocalDocument(document: WorkspaceDocumentContent): WorkspaceDocumentContent {
-  return { ...document, spaceId: document.spaceId ?? "business" };
-}
-
-function placeWorkspaceDocument(
-  documents: readonly WorkspaceDocument[],
-  documentId: string,
-  targetId: string,
-): readonly WorkspaceDocument[] {
-  if (documentId === targetId) return documents;
-  const document = findWorkspaceDocument(documents, documentId);
-  const target = findWorkspaceDocument(documents, targetId);
-  if (!document || findWorkspaceDocument(document.children ?? [], targetId)) return documents;
-
-  const withoutDocument = removeWorkspaceDocument(documents, documentId);
-  if (!target) {
-    return [
-      { ...document, state: "published", spaceId: targetId, sourceDocumentId: undefined },
-      ...withoutDocument,
-    ];
-  }
-  return appendWorkspaceDocument(withoutDocument, targetId, {
+  const legacyShape: {
+    documentType?: WorkspaceDocumentContent["documentType"];
+    state?: WorkspaceDocumentContent["state"];
+  } = document;
+  return {
     ...document,
-    state: "published",
-    spaceId: target.spaceId,
-    sourceDocumentId: undefined,
-  });
-}
-
-function appendWorkspaceDocument(
-  documents: readonly WorkspaceDocument[],
-  targetId: string,
-  document: WorkspaceDocument,
-): readonly WorkspaceDocument[] {
-  return documents.map((candidate) =>
-    candidate.id === targetId
-      ? { ...candidate, children: [...(candidate.children ?? []), document] }
-      : {
-          ...candidate,
-          ...(candidate.children
-            ? { children: appendWorkspaceDocument(candidate.children, targetId, document) }
-            : {}),
-        },
-  );
-}
-
-function removeWorkspaceDocument(
-  documents: readonly WorkspaceDocument[],
-  documentId: string,
-): readonly WorkspaceDocument[] {
-  return documents
-    .filter((document) => document.id !== documentId)
-    .map((document) => ({
-      ...document,
-      ...(document.children
-        ? { children: removeWorkspaceDocument(document.children, documentId) }
-        : {}),
-    }));
+    spaceId: document.spaceId ?? null,
+    documentType: legacyShape.documentType ?? "document-board",
+    state: legacyShape.state ?? "draft",
+  };
 }
 
 function toWorkspaceDocument(document: WorkspaceDocumentContent): WorkspaceDocument {
   return {
     id: document.id,
     title: document.title.trim() || "Untitled",
-    type: "document-board",
-    state: "draft",
-    spaceId: document.spaceId ?? "business",
+    type: document.documentType,
+    state: document.state,
+    spaceId: document.spaceId,
+    parentDocumentId: document.parentDocumentId,
     sourceDocumentId: document.sourceDocumentId,
   };
 }
 
-function mergeLocalTitles(
-  documents: readonly WorkspaceDocument[],
-  localDocumentById: ReadonlyMap<string, WorkspaceDocumentContent>,
-): readonly WorkspaceDocument[] {
-  return documents.map((document) => {
-    const localDocument = localDocumentById.get(document.id);
-    const localTitle = localDocument?.title.trim();
-    return {
-      ...document,
-      title: localTitle && localTitle.length > 0 ? localTitle : document.title,
-      ...(document.children
-        ? { children: mergeLocalTitles(document.children, localDocumentById) }
-        : {}),
-    };
-  });
+function buildDocumentTree(documents: readonly WorkspaceDocument[]): readonly WorkspaceDocument[] {
+  const byParent = new Map<string, WorkspaceDocument[]>();
+  const documentIds = new Set(documents.map((document) => document.id));
+
+  for (const document of documents) {
+    const parentId = document.parentDocumentId;
+    if (!parentId || !documentIds.has(parentId)) continue;
+    byParent.set(parentId, [...(byParent.get(parentId) ?? []), document]);
+  }
+
+  const attachChildren = (document: WorkspaceDocument): WorkspaceDocument => {
+    const children = byParent.get(document.id)?.map(attachChildren);
+    return { ...document, ...(children?.length ? { children } : {}) };
+  };
+
+  return documents
+    .filter((document) => !document.parentDocumentId || !documentIds.has(document.parentDocumentId))
+    .map(attachChildren);
 }

@@ -21,6 +21,8 @@ export function createEmptyWorkspaceDocument({
     id,
     workspaceId,
     spaceId,
+    documentType: "document-board",
+    state: "draft",
     title: "",
     metadata: {
       revision: 0,

@@ -1,6 +1,20 @@
 import type { DocumentBlock } from "@/shared/editor";
 import type { WorkspaceDocumentContent } from "../../documents/model/workspace-document-content.entity";
-import type { CreateDocumentReviewChangeInput } from "../model/document-review.entity";
+import type {
+  CreateDocumentReviewChangeInput,
+  DocumentReviewSnapshots,
+} from "../model/document-review.entity";
+
+/** Captures stable text projections used to render review context independently of the editor. */
+export function createDocumentReviewSnapshots(
+  source: WorkspaceDocumentContent | null,
+  draft: WorkspaceDocumentContent,
+): DocumentReviewSnapshots {
+  return {
+    before: source ? createSnapshot(source) : null,
+    after: createSnapshot(draft),
+  };
+}
 
 /** Builds a block-level review diff between a published revision and its draft. */
 export function createDocumentReviewChanges(
@@ -74,4 +88,26 @@ function blockLabel(block: DocumentBlock) {
 
 function blockText(block: DocumentBlock) {
   return block.type === "list" ? block.items.map((item) => item.content).join("\n") : block.content;
+}
+
+function createSnapshot(document: WorkspaceDocumentContent) {
+  return {
+    title: document.title,
+    blocks: document.blocks.map(cloneBlock),
+  };
+}
+
+function cloneBlock(block: DocumentBlock): DocumentBlock {
+  switch (block.type) {
+    case "heading":
+      return { ...block, options: { ...block.options } };
+    case "paragraph":
+      return { ...block, options: { ...block.options } };
+    case "list":
+      return {
+        ...block,
+        options: { ...block.options },
+        items: block.items.map((item) => ({ ...item })),
+      };
+  }
 }

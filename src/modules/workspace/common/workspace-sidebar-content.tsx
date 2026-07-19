@@ -1,38 +1,28 @@
 import type { FC } from "react";
-import {
-  ChevronsUpDown,
-  GitPullRequest,
-  Home,
-  Layers3,
-  LogOut,
-  Search,
-  Settings,
-} from "lucide-react";
+import { ChevronsUpDown, Home, Layers3, LogOut, Search, Settings } from "lucide-react";
 import { useLogout, type Viewer } from "@/modules/identity";
-import type { WorkspaceSubspace } from "../documents/model/workspace-document.entity";
+import type { WorkspaceSpace } from "../spaces/model/workspace-space.entity";
 
 type Props = {
   viewer: Viewer;
-  spaces: readonly WorkspaceSubspace[];
+  spaces: readonly WorkspaceSpace[];
   onOpenHome: () => void;
+  onOpenSearch: () => void;
   onOpenSpace: (spaceId: string) => void;
-  onOpenReviews: () => void;
   onOpenSettings: () => void;
-  activeSection: "home" | "document" | "space" | "reviews" | "settings";
+  activeSection: "home" | "document" | "space" | "settings";
   activeSpaceId: string | null;
-  reviewCount: number;
 };
 
 export const WorkspaceSidebarContent: FC<Props> = ({
   viewer,
   spaces,
   onOpenHome,
+  onOpenSearch,
   onOpenSpace,
-  onOpenReviews,
   onOpenSettings,
   activeSection,
   activeSpaceId,
-  reviewCount,
 }) => {
   const logout = useLogout();
   const initials = `${viewer.firstName.at(0) ?? ""}${viewer.lastName.at(0) ?? ""}`.toUpperCase();
@@ -65,24 +55,8 @@ export const WorkspaceSidebarContent: FC<Props> = ({
         </button>
         <button
           type="button"
-          className={`flex h-8 w-full items-center gap-2 rounded-lg px-2 text-sm transition-colors ${
-            activeSection === "reviews"
-              ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-              : "text-sidebar-foreground/75 hover:bg-sidebar-accent/70"
-          }`}
-          onClick={onOpenReviews}
-        >
-          <GitPullRequest className="size-4" />
-          Reviews
-          {reviewCount > 0 && (
-            <span className="ml-auto rounded-full bg-sidebar-primary/10 px-1.5 text-[10px] font-medium text-sidebar-primary">
-              {reviewCount}
-            </span>
-          )}
-        </button>
-        <button
-          type="button"
           className="flex h-8 w-full items-center gap-2 rounded-lg px-2 text-sm text-sidebar-foreground/75 transition-colors hover:bg-sidebar-accent/70"
+          onClick={onOpenSearch}
         >
           <Search className="size-4" />
           Search

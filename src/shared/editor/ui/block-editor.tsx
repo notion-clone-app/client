@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type ComponentType, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import {
   ChevronDown,
   GripVertical,
@@ -21,6 +28,7 @@ type BlockEditorProps = Readonly<{
   blocks: readonly DocumentBlock[];
   onChange: (blocks: readonly DocumentBlock[]) => void;
   onNavigateBefore?: () => void;
+  renderBlockAside?: (block: DocumentBlock) => ReactNode;
 }>;
 
 type BlockCommandId = "paragraph" | "heading-1" | "heading-2" | "heading-3" | "bullet" | "number";
@@ -45,7 +53,12 @@ const blockCommands: readonly BlockCommand[] = [
  * Portable block editing surface.
  * Host applications own document identity, title, metadata, persistence and synchronization.
  */
-export function BlockEditor({ blocks, onChange, onNavigateBefore }: BlockEditorProps) {
+export function BlockEditor({
+  blocks,
+  onChange,
+  onNavigateBefore,
+  renderBlockAside,
+}: BlockEditorProps) {
   const editorRef = useRef<HTMLElement>(null);
   const pendingFocusBlockIdRef = useRef<string | null>(null);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
@@ -224,6 +237,7 @@ export function BlockEditor({ blocks, onChange, onNavigateBefore }: BlockEditorP
                   />
                 )}
               </div>
+              {renderBlockAside?.(block)}
             </div>
           );
         })}

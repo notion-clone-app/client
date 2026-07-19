@@ -1,84 +1,176 @@
-import { Navigate, useNavigate, useParams } from "react-router";
-import { Layers3, Plus } from "lucide-react";
+import { useRef, type ChangeEvent } from "react";
+import { Navigate, useNavigate, useParams, useSearchParams } from "react-router";
+import { Layers3, Plus, Search, Upload, X } from "lucide-react";
 import { ROUTES, workspaceDocumentPath } from "@/shared/model";
 import { Button } from "@/shared/ui/kit/button";
 import { useWorkspaceContext } from "../workspace.context";
+import { filterWorkspaceDocumentTree } from "./model/workspace-document-tree";
 import { DocumentTree } from "./ui/document-tree";
+import { SpaceTabs } from "../spaces/ui/space-tabs";
 
 const SpacePage = () => {
   const { spaceId } = useParams<"spaceId">();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const workspace = useWorkspaceContext();
   const space = workspace.spaces.find((candidate) => candidate.id === spaceId);
 
   if (!space) return <Navigate to={ROUTES.WORKSPACE} replace />;
 
-  const documents = workspace.documents.filter(
+  const activeTab = searchParams.get("tab") === "drafts" ? "drafts" : "content";
+  const query = searchParams.get("q") ?? "";
+  const publishedDocuments = workspace.documents.filter(
     (document) => document.state === "published" && document.spaceId === space.id,
   );
   const drafts = workspace.documents.filter(
     (document) => document.state === "draft" && document.spaceId === space.id,
   );
+  const visibleDocuments = filterWorkspaceDocumentTree(
+    activeTab === "drafts" ? drafts : publishedDocuments,
+    query,
+  );
+  const reviews = workspace.reviews.filter((review) => review.spaceId === space.id);
+  const members = workspace.members.filter((member) => space.memberIds.includes(member.id));
 
   const createDraft = () => {
     const document = workspace.createDocument(space.id);
     if (document) void navigate(workspaceDocumentPath(document.id));
   };
 
-  return (
-    <main className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 md:px-12 md:py-16">
-      <div className="flex flex-wrap items-start justify-between gap-5">
-        <div>
-          <div className="mb-4 grid size-10 place-items-center rounded-xl border border-border bg-card shadow-card">
-            <Layers3 className="size-4.5" />
-          </div>
-          <h1 className="text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">{space.title}</h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-            Draft and publish knowledge inside your own folder structure.
-          </p>
-        </div>
-        <Button onClick={createDraft}>
-          <Plus /> New draft
-        </Button>
-      </div>
+  const uploadCover = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      if (typeof reader.result === "string") workspace.updateSpaceCover(space.id, reader.result);
+    });
+    reader.readAsDataURL(file);
+    event.target.value = "";
+  };
 
-      {drafts.length > 0 && (
-        <section aria-labelledby="space-drafts" className="mt-12">
-          <div className="mb-3 flex items-center gap-3">
-            <h2 id="space-drafts" className="text-sm font-medium">
-              Drafts
-            </h2>
-            <span className="text-xs text-muted-foreground">{drafts.length}</span>
+  return (
+    <article>
+      <input
+        ref={coverInputRef}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        aria-label="Upload space cover"
+        onChange={uploadCover}
+      />
+
+      {space.coverImage && (
+        <div className="group/cover relative h-48 w-full overflow-hidden bg-muted sm:h-60">
+          <img src={space.coverImage} alt="" className="size-full object-cover" />
+          <div className="absolute right-6 bottom-4 flex gap-1 opacity-0 transition-opacity group-hover/cover:opacity-100 focus-within:opacity-100">
+            <Button variant="secondary" size="sm" onClick={() => coverInputRef.current?.click()}>
+              <Upload /> Change cover
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon-sm"
+              aria-label="Remove space cover"
+              onClick={() => workspace.updateSpaceCover(space.id, undefined)}
+            >
+              <X />
+            </Button>
           </div>
-          <DocumentTree
-            documents={drafts}
-            selectedDocumentId={null}
-            onSelect={(document) => void navigate(workspaceDocumentPath(document.id))}
-          />
-        </section>
+        </div>
       )}
 
-      <section aria-labelledby="space-content" className={drafts.length ? "mt-12" : "mt-14"}>
-        <div className="mb-3 flex items-center gap-3">
-          <h2 id="space-content" className="text-sm font-medium">
-            Content
-          </h2>
-          <span className="text-xs text-muted-foreground">{documents.length}</span>
-        </div>
-        {documents.length ? (
-          <DocumentTree
-            documents={documents}
-            selectedDocumentId={null}
-            onSelect={(document) => void navigate(workspaceDocumentPath(document.id))}
-          />
-        ) : (
-          <div className="border-t border-border px-2 py-12 text-sm text-muted-foreground">
-            This space does not have published documents yet.
+      <main className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 md:px-12 md:py-14">
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div>
+            <div className="mb-4 grid size-10 place-items-center rounded-xl bg-muted">
+              <Layers3 className="size-4.5" />
+            </div>
+            <h1 className="text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">{space.title}</h1>
+            <div className="mt-4 flex items-center gap-3">
+              <div className="flex -space-x-2" aria-label="Space members">
+                {members.map((member) => (
+                  <span
+                    key={member.id}
+                    title={member.name}
+                    className="grid size-8 place-items-center rounded-full border-2 border-background bg-muted text-[10px] font-semibold"
+                  >
+                    {initials(member.name)}
+                  </span>
+                ))}
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {members.length} {members.length === 1 ? "member" : "members"}
+              </span>
+            </div>
           </div>
-        )}
-      </section>
-    </main>
+          <div className="flex flex-wrap gap-2">
+            {!space.coverImage && (
+              <Button variant="ghost" size="sm" onClick={() => coverInputRef.current?.click()}>
+                <Upload /> Add cover
+              </Button>
+            )}
+            <Button onClick={createDraft}>
+              <Plus /> New draft
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-10">
+          <SpaceTabs
+            spaceId={space.id}
+            active={activeTab}
+            draftCount={drafts.length}
+            reviewCount={reviews.length}
+          />
+        </div>
+
+        <div className="mt-6 flex h-11 max-w-xl items-center gap-3 rounded-xl bg-muted/60 px-3">
+          <Search className="size-4 text-muted-foreground" />
+          <input
+            value={query}
+            aria-label={`Search ${activeTab} in ${space.title}`}
+            placeholder={`Search ${activeTab} in ${space.title}`}
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            onChange={(event) => {
+              const next = new URLSearchParams(searchParams);
+              if (event.target.value) next.set("q", event.target.value);
+              else next.delete("q");
+              setSearchParams(next, { replace: true });
+            }}
+          />
+        </div>
+
+        <section aria-labelledby="space-tree" className="mt-7">
+          <div className="mb-3 flex items-center gap-3">
+            <h2 id="space-tree" className="text-sm font-medium">
+              {activeTab === "drafts" ? "Draft documents" : "Published content"}
+            </h2>
+            <span className="text-xs text-muted-foreground">{visibleDocuments.length}</span>
+          </div>
+          {visibleDocuments.length ? (
+            <DocumentTree
+              documents={visibleDocuments}
+              selectedDocumentId={null}
+              onSelect={(document) => void navigate(workspaceDocumentPath(document.id))}
+            />
+          ) : (
+            <div className="border-t border-border px-2 py-12 text-sm text-muted-foreground">
+              {query ? "No documents match this search." : `No ${activeTab} in this space yet.`}
+            </div>
+          )}
+        </section>
+      </main>
+    </article>
   );
 };
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 export const Component = SpacePage;

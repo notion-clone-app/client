@@ -15,6 +15,8 @@ describe("createEmptyWorkspaceDocument", () => {
       id: "document-1",
       workspaceId: "workspace-1",
       spaceId: "tech",
+      documentType: "document-board",
+      state: "draft",
       title: "",
       metadata: { revision: 0, createdBy: "user-1" },
       blocks: [

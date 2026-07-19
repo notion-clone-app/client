@@ -134,4 +134,18 @@ describe("BlockEditor", () => {
 
     expect(screen.getByRole("textbox", { name: "Paragraph" })).toHaveFocus();
   });
+
+  it("renders host-owned content beside a matching block", () => {
+    render(
+      <BlockEditor
+        blocks={initialBlocks}
+        onChange={() => undefined}
+        renderBlockAside={(block) =>
+          block.id === "paragraph-1" ? <aside>Review comment</aside> : null
+        }
+      />,
+    );
+
+    expect(screen.getByText("Review comment")).toBeInTheDocument();
+  });
 });

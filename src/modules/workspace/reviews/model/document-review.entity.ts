@@ -32,6 +32,17 @@ type DocumentReviewTarget = Readonly<{
   placement: string;
 }>;
 
+type DocumentReviewSnapshot = Readonly<{
+  title: string;
+  blocks: readonly DocumentBlock[];
+}>;
+
+/** Immutable, presentation-oriented document state captured when a review is created. */
+export type DocumentReviewSnapshots = Readonly<{
+  before: DocumentReviewSnapshot | null;
+  after: DocumentReviewSnapshot;
+}>;
+
 export type CreateDocumentReviewChangeInput = Omit<DocumentReviewChange, "id" | "comments">;
 
 /**
@@ -41,6 +52,7 @@ export type CreateDocumentReviewChangeInput = Omit<DocumentReviewChange, "id" | 
  */
 export type DocumentReview = Readonly<{
   id: string;
+  spaceId: string;
   documentId: string;
   documentTitle: string;
   authorId: string;
@@ -49,10 +61,12 @@ export type DocumentReview = Readonly<{
   status: DocumentReviewStatus;
   reviewers: readonly DocumentReviewer[];
   changes: readonly DocumentReviewChange[];
+  snapshots: DocumentReviewSnapshots;
   createdAt: string;
 }>;
 
 export type CreateDocumentReviewInput = Readonly<{
+  spaceId: string;
   documentId: string;
   documentTitle: string;
   authorId: string;
@@ -60,4 +74,6 @@ export type CreateDocumentReviewInput = Readonly<{
   target: DocumentReviewTarget;
   reviewerIds: readonly string[];
   changes: readonly CreateDocumentReviewChangeInput[];
+  snapshots: DocumentReviewSnapshots;
 }>;
+import type { DocumentBlock } from "@/shared/editor";

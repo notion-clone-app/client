@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import type { WorkspaceDocumentContent } from "../model/workspace-document-content.entity";
@@ -10,6 +10,8 @@ const initialDocument: WorkspaceDocumentContent = {
   id: "document-1",
   workspaceId: "workspace-1",
   spaceId: "tech",
+  documentType: "document-board",
+  state: "draft",
   title: "Draft",
   metadata: {
     revision: 1,
@@ -50,12 +52,17 @@ describe("WorkspaceDocumentEditor", () => {
     expect(paragraph).toHaveValue("Updated paragraph");
   });
 
-  it("adds and removes the mocked workspace cover", async () => {
+  it("adds and removes an uploaded workspace cover", async () => {
     const user = userEvent.setup();
     render(<ControlledWorkspaceDocumentEditor />);
 
-    await user.click(screen.getByRole("button", { name: /Add cover/u }));
-    expect(screen.getByRole("button", { name: "Remove document cover" })).toBeInTheDocument();
+    await user.upload(
+      screen.getByLabelText("Upload document cover"),
+      new File(["cover"], "cover.png", { type: "image/png" }),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Remove document cover" })).toBeInTheDocument(),
+    );
 
     await user.click(screen.getByRole("button", { name: "Remove document cover" }));
     expect(screen.getByRole("button", { name: /Add cover/u })).toBeInTheDocument();

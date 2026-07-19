@@ -7,9 +7,9 @@ export const ROUTES = {
   WORKSPACE: "/workspace",
   WORKSPACE_DOCUMENT: "/workspace/documents/:documentId",
   WORKSPACE_SPACE: "/workspace/spaces/:spaceId",
-  WORKSPACE_REVIEWS: "/workspace/reviews",
-  WORKSPACE_REVIEW_CREATE: "/workspace/reviews/new",
-  WORKSPACE_REVIEW: "/workspace/reviews/:reviewId",
+  WORKSPACE_SPACE_REVIEWS: "/workspace/spaces/:spaceId/reviews",
+  WORKSPACE_SPACE_REVIEW_CREATE: "/workspace/spaces/:spaceId/reviews/new",
+  WORKSPACE_SPACE_REVIEW: "/workspace/spaces/:spaceId/reviews/:reviewId",
   WORKSPACE_SETTINGS: "/workspace/settings",
   LOGIN: "/login",
   REGISTRATION: "/registration",
@@ -24,8 +24,19 @@ export function workspaceSpacePath(spaceId: string) {
   return ROUTES.WORKSPACE_SPACE.replace(":spaceId", encodeURIComponent(spaceId));
 }
 
-export function workspaceReviewPath(reviewId: string) {
-  return ROUTES.WORKSPACE_REVIEW.replace(":reviewId", encodeURIComponent(reviewId));
+export function workspaceSpaceReviewsPath(spaceId: string) {
+  return ROUTES.WORKSPACE_SPACE_REVIEWS.replace(":spaceId", encodeURIComponent(spaceId));
+}
+
+export function workspaceSpaceReviewCreatePath(spaceId: string) {
+  return ROUTES.WORKSPACE_SPACE_REVIEW_CREATE.replace(":spaceId", encodeURIComponent(spaceId));
+}
+
+export function workspaceReviewPath(spaceId: string, reviewId: string) {
+  return ROUTES.WORKSPACE_SPACE_REVIEW.replace(":spaceId", encodeURIComponent(spaceId)).replace(
+    ":reviewId",
+    encodeURIComponent(reviewId),
+  );
 }
 
 type PathParams = Record<string, never>;

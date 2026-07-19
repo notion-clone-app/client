@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ChangeEvent } from "react";
-import { ImagePlus, Upload, X } from "lucide-react";
+import { MessageSquare, Upload, X } from "lucide-react";
 import { BlockEditor } from "@/shared/editor";
 import { Button } from "@/shared/ui/kit/button";
 import type { WorkspaceDocumentContent } from "../model/workspace-document-content.entity";
@@ -7,16 +7,25 @@ import type { WorkspaceDocumentContent } from "../model/workspace-document-conte
 type WorkspaceDocumentEditorProps = Readonly<{
   document: WorkspaceDocumentContent;
   onChange: (document: WorkspaceDocumentContent) => void;
+  commentsByBlockId?: ReadonlyMap<string, readonly WorkspaceBlockComment[]>;
 }>;
 
-const mockCover =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='480' viewBox='0 0 1600 480'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%231b3029'/%3E%3Cstop offset='.46' stop-color='%23305645'/%3E%3Cstop offset='1' stop-color='%23c4a36d'/%3E%3C/linearGradient%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.7' numOctaves='3' stitchTiles='stitch' type='fractalNoise'/%3E%3CfeColorMatrix values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 .12 0'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='1600' height='480' fill='url(%23g)'/%3E%3Crect width='1600' height='480' filter='url(%23n)' opacity='.45'/%3E%3C/svg%3E";
+type WorkspaceBlockComment = Readonly<{
+  id: string;
+  authorName: string;
+  body: string;
+  resolved: boolean;
+}>;
 
 /**
  * Composes the portable block editor with workspace-owned page chrome.
  * Title, cover, audit metadata and persistence remain outside shared editor code.
  */
-export function WorkspaceDocumentEditor({ document, onChange }: WorkspaceDocumentEditorProps) {
+export function WorkspaceDocumentEditor({
+  document,
+  onChange,
+  commentsByBlockId,
+}: WorkspaceDocumentEditorProps) {
   const rootRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -83,15 +92,8 @@ export function WorkspaceDocumentEditor({ document, onChange }: WorkspaceDocumen
       <div className="mx-auto w-full max-w-4xl px-5 pt-9 sm:px-8 md:pt-12">
         {!document.coverImage && (
           <div className="mb-5 flex items-center gap-1 text-muted-foreground opacity-0 transition-opacity focus-within:opacity-100 hover:opacity-100 sm:opacity-100">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => updateDocument({ coverImage: mockCover })}
-            >
-              <ImagePlus /> Add cover
-            </Button>
             <Button variant="ghost" size="sm" onClick={() => coverInputRef.current?.click()}>
-              <Upload /> Upload
+              <Upload /> Add cover
             </Button>
           </div>
         )}
@@ -117,6 +119,29 @@ export function WorkspaceDocumentEditor({ document, onChange }: WorkspaceDocumen
           blocks={document.blocks}
           onChange={(blocks) => updateDocument({ blocks })}
           onNavigateBefore={() => titleRef.current?.focus()}
+          renderBlockAside={(block) => {
+            const comments = commentsByBlockId?.get(block.id);
+            if (!comments?.length) return null;
+            return (
+              <aside className="mt-2 ml-8 w-[calc(100%-2rem)] basis-full space-y-2 md:absolute md:top-0 md:left-full md:mt-0 md:ml-5 md:w-64">
+                {comments.map((comment) => (
+                  <div
+                    key={comment.id}
+                    className="rounded-xl border border-border/70 bg-popover p-3 shadow-sm"
+                  >
+                    <div className="flex items-center gap-2 text-[11px] font-medium">
+                      <MessageSquare className="size-3.5 text-muted-foreground" />
+                      <span className="truncate">{comment.authorName}</span>
+                      {comment.resolved && (
+                        <span className="ml-auto text-emerald-700">Resolved</span>
+                      )}
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-foreground/80">{comment.body}</p>
+                  </div>
+                ))}
+              </aside>
+            );
+          }}
         />
       </div>
     </article>

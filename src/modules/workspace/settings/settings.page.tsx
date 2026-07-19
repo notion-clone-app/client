@@ -29,13 +29,6 @@ const SettingsPage = () => {
       </div>
 
       <div className="space-y-8">
-        <SettingsSection icon={Settings} title="General" description="Basic workspace information.">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <MockField label="Workspace name" value="My workspace" />
-            <MockField label="Workspace slug" value="my-workspace" />
-          </div>
-        </SettingsSection>
-
         <SettingsSection
           icon={Users}
           title="Members"
@@ -94,7 +87,7 @@ const SettingsPage = () => {
         <SettingsSection
           icon={ShieldCheck}
           title="Document approvals"
-          description="Mock policy applied before a review can be published to a board."
+          description="Local policy applied before a review can be published."
         >
           <div className="space-y-3">
             <PolicyRow
@@ -114,7 +107,7 @@ const SettingsPage = () => {
             />
           </div>
           <p className="mt-4 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <Check className="size-3" /> Mock policy · API-backed configuration comes later
+            <Check className="size-3" /> Stored locally with workspace collaboration state
           </p>
         </SettingsSection>
       </div>
@@ -143,19 +136,6 @@ function SettingsSection({
       </div>
       <div className="rounded-2xl border border-border bg-card p-5">{children}</div>
     </section>
-  );
-}
-
-function MockField({ label, value }: { label: string; value: string }) {
-  return (
-    <label>
-      <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{label}</span>
-      <input
-        value={value}
-        readOnly
-        className="h-10 w-full rounded-xl border border-border bg-muted/35 px-3 text-sm outline-none"
-      />
-    </label>
   );
 }
 

@@ -3,7 +3,10 @@ import { Navigate, useNavigate, useParams } from "react-router";
 import {
   ArrowLeft,
   Check,
+  ChevronDown,
+  ChevronUp,
   ExternalLink,
+  FileText,
   Files,
   GitCompareArrows,
   GitMerge,
@@ -12,20 +15,26 @@ import {
   Send,
   UserRoundCheck,
 } from "lucide-react";
-import { ROUTES, workspaceDocumentPath } from "@/shared/model";
+import { ROUTES, workspaceDocumentPath, workspaceSpaceReviewsPath } from "@/shared/model";
+import { ReadonlyBlocks, type DocumentBlock } from "@/shared/editor";
 import { Button } from "@/shared/ui/kit/button";
 import { useWorkspaceContext } from "../workspace.context";
+import type { DocumentReview } from "./model/document-review.entity";
 import { ReviewStatus } from "./ui/review-status";
 
 const ReviewPage = () => {
-  const { reviewId } = useParams<"reviewId">();
+  const { reviewId, spaceId } = useParams<"reviewId" | "spaceId">();
   const navigate = useNavigate();
   const workspace = useWorkspaceContext();
-  const review = workspace.reviews.find((candidate) => candidate.id === reviewId);
+  const review = workspace.reviews.find(
+    (candidate) => candidate.id === reviewId && candidate.spaceId === spaceId,
+  );
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<"overview" | "changes">("overview");
+  const [expandedChanges, setExpandedChanges] = useState<Record<string, boolean>>({});
+  const [showFullDraft, setShowFullDraft] = useState(false);
 
-  if (!review) return <Navigate to={ROUTES.WORKSPACE_REVIEWS} replace />;
+  if (!review || !spaceId) return <Navigate to={ROUTES.WORKSPACE} replace />;
 
   const pendingReviewer = review.reviewers.find((reviewer) => reviewer.status === "pending");
   const approvals = review.reviewers.filter((reviewer) => reviewer.status === "approved").length;
@@ -47,7 +56,11 @@ const ReviewPage = () => {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 md:py-10">
-      <Button variant="ghost" size="sm" onClick={() => void navigate(ROUTES.WORKSPACE_REVIEWS)}>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => void navigate(workspaceSpaceReviewsPath(spaceId))}
+      >
         <ArrowLeft /> Review requests
       </Button>
 
@@ -116,16 +129,33 @@ const ReviewPage = () => {
 
           {activeTab === "changes" && (
             <section aria-labelledby="review-changes">
-              <div className="mb-3 flex items-center gap-2">
-                <MessageSquare className="size-4 text-muted-foreground" />
-                <h2 id="review-changes" className="text-sm font-medium">
-                  Changes · {review.changes.length}
-                </h2>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="size-4 text-muted-foreground" />
+                  <h2 id="review-changes" className="text-sm font-medium">
+                    Changes · {review.changes.length}
+                  </h2>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-expanded={showFullDraft}
+                  onClick={() => setShowFullDraft((current) => !current)}
+                >
+                  <FileText /> {showFullDraft ? "Hide draft" : "View full draft"}
+                </Button>
               </div>
+
+              {showFullDraft && <DocumentSnapshot review={review} />}
 
               <div className="space-y-4">
                 {review.changes.map((change) => {
                   const draft = commentDrafts[change.id] ?? "";
+                  const expanded = expandedChanges[change.id] ?? false;
+                  const context = findChangeContext(review, change.blockId, expanded);
+                  const versions = findChangeVersions(review, change.blockId);
+                  const hasBefore = Boolean(versions.before ?? change.before);
+                  const hasAfter = Boolean(versions.after ?? change.after);
                   return (
                     <article
                       key={change.id}
@@ -145,22 +175,52 @@ const ReviewPage = () => {
                         )}
                       </div>
 
-                      <div className="font-mono text-xs leading-6">
-                        {change.before && (
-                          <div className="border-b border-border bg-red-500/6 px-4 py-2 text-red-900/80">
-                            <span className="mr-3 text-red-500 select-none">−</span>
-                            {change.before}
-                          </div>
-                        )}
-                        {change.after && (
-                          <div className="border-b border-border bg-emerald-500/6 px-4 py-2 text-emerald-900/80">
-                            <span className="mr-3 text-emerald-600 select-none">+</span>
-                            {change.after}
-                          </div>
-                        )}
+                      <div>
+                        {context.before.map((block) => (
+                          <ContextLine key={block.id} block={block} />
+                        ))}
+                        <div
+                          className={`grid border-b border-border ${hasBefore && hasAfter ? "lg:grid-cols-2" : ""}`}
+                        >
+                          {hasBefore && (
+                            <ChangeVersion
+                              label="Before"
+                              tone="removed"
+                              block={versions.before}
+                              fallback={change.before}
+                            />
+                          )}
+                          {hasAfter && (
+                            <ChangeVersion
+                              label="After"
+                              tone="added"
+                              block={versions.after}
+                              fallback={change.after}
+                            />
+                          )}
+                        </div>
+                        {context.after.map((block) => (
+                          <ContextLine key={block.id} block={block} />
+                        ))}
                       </div>
 
                       <div className="space-y-3 p-4">
+                        {context.canExpand && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-expanded={expanded}
+                            onClick={() =>
+                              setExpandedChanges((current) => ({
+                                ...current,
+                                [change.id]: !expanded,
+                              }))
+                            }
+                          >
+                            {expanded ? <ChevronUp /> : <ChevronDown />}
+                            {expanded ? "Show less context" : "Show more context"}
+                          </Button>
+                        )}
                         {change.comments.map((item) => {
                           const author = workspace.members.find(
                             (member) => member.id === item.authorId,
@@ -337,6 +397,124 @@ function initials(name: string) {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+}
+
+type SnapshotBlock = DocumentBlock;
+
+function findChangeContext(
+  review: DocumentReview,
+  blockId: string | null,
+  expanded: boolean,
+): Readonly<{
+  before: readonly SnapshotBlock[];
+  after: readonly SnapshotBlock[];
+  canExpand: boolean;
+}> {
+  if (!blockId) return { before: [], after: [], canExpand: false };
+
+  const snapshots = [review.snapshots.after, review.snapshots.before].filter(
+    (snapshot): snapshot is NonNullable<typeof snapshot> => Boolean(snapshot),
+  );
+  const snapshot = snapshots.find((candidate) =>
+    candidate.blocks.some((block) => block.id === blockId),
+  );
+  if (!snapshot) return { before: [], after: [], canExpand: false };
+
+  const index = snapshot.blocks.findIndex((block) => block.id === blockId);
+  const radius = expanded ? 4 : 1;
+  return {
+    before: snapshot.blocks.slice(Math.max(0, index - radius), index),
+    after: snapshot.blocks.slice(index + 1, index + 1 + radius),
+    canExpand: index > 1 || snapshot.blocks.length - index - 1 > 1,
+  };
+}
+
+function ContextLine({ block }: { block: SnapshotBlock }) {
+  return (
+    <div className="border-b border-border bg-muted/15 px-6 py-4 text-foreground/55">
+      <ReadonlyBlocks blocks={[block]} />
+    </div>
+  );
+}
+
+function findChangeVersions(review: DocumentReview, blockId: string | null) {
+  if (!blockId) return { before: null, after: null };
+  return {
+    before: review.snapshots.before?.blocks.find((block) => block.id === blockId) ?? null,
+    after: review.snapshots.after.blocks.find((block) => block.id === blockId) ?? null,
+  };
+}
+
+function ChangeVersion({
+  label,
+  tone,
+  block,
+  fallback,
+}: Readonly<{
+  label: string;
+  tone: "added" | "removed";
+  block: DocumentBlock | null;
+  fallback?: string | undefined;
+}>) {
+  return (
+    <section
+      aria-label={label}
+      className={`min-h-32 px-6 py-5 ${tone === "added" ? "bg-emerald-500/5" : "border-b border-border bg-red-500/5 lg:border-r lg:border-b-0"}`}
+    >
+      <div
+        className={`mb-5 text-[10px] font-semibold tracking-[0.12em] uppercase ${tone === "added" ? "text-emerald-700" : "text-red-700"}`}
+      >
+        {label}
+      </div>
+      {block ? (
+        <ReadonlyBlocks blocks={[block]} />
+      ) : (
+        <p className="text-2xl font-semibold tracking-[-0.025em] whitespace-pre-wrap">{fallback}</p>
+      )}
+    </section>
+  );
+}
+
+function DocumentSnapshot({ review }: { review: DocumentReview }) {
+  const changedBlockIds = new Set(
+    review.changes.flatMap((change) => (change.blockId ? [change.blockId] : [])),
+  );
+  const titleChanged = review.changes.some((change) => change.blockId === null);
+
+  return (
+    <div className="mb-5 overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+        <FileText className="size-4 text-muted-foreground" />
+        <span className="text-sm font-medium">Draft snapshot</span>
+        <span className="ml-auto text-[11px] text-muted-foreground">Read-only revision</span>
+      </div>
+      <div className="max-h-[58vh] overflow-y-auto px-5 py-6 sm:px-8">
+        <h3
+          className={`text-2xl font-semibold tracking-[-0.025em] ${titleChanged ? "-mx-2 rounded-lg bg-emerald-500/8 px-2 py-1" : ""}`}
+        >
+          {review.snapshots.after.title}
+        </h3>
+        <div className="mt-6 space-y-1">
+          {review.snapshots.after.blocks.map((block) => {
+            const changed = changedBlockIds.has(block.id);
+            return (
+              <div
+                key={block.id}
+                className={`rounded-lg px-3 py-2.5 ${changed ? "bg-emerald-500/8 ring-1 ring-emerald-500/15" : ""}`}
+              >
+                {changed && (
+                  <div className="mb-2 text-[10px] font-medium tracking-wide text-emerald-700 uppercase">
+                    Changed
+                  </div>
+                )}
+                <ReadonlyBlocks blocks={[block]} />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export const Component = ReviewPage;
