@@ -44,4 +44,5 @@ export type ListBlock = DocumentBlockBase &
     items: readonly ListItem[];
   }>;
 
+/** Portable, serializable content unit understood by the shared editor registry. */
 export type DocumentBlock = HeadingBlock | ParagraphBlock | ListBlock;

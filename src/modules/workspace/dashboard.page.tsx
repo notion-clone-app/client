@@ -1,6 +1,10 @@
-import type { ComponentType } from "react";
-import { ArrowUpRight, FilePlus2, Lightbulb, PenTool, Upload, Users } from "lucide-react";
+import { useState, type ComponentType, type FormEvent } from "react";
+import { useNavigate } from "react-router";
+import { ArrowUpRight, Layers3, Lightbulb, PenTool, Plus, Upload, Users, X } from "lucide-react";
 import { useSession } from "@/modules/identity";
+import { workspaceSpacePath } from "@/shared/model";
+import { Button } from "@/shared/ui/kit/button";
+import { useWorkspaceContext } from "./workspace.context";
 
 type SuggestedAction = Readonly<{
   title: string;
@@ -10,9 +14,9 @@ type SuggestedAction = Readonly<{
 
 const suggestedActions: readonly SuggestedAction[] = [
   {
-    title: "Create a document board",
-    description: "Start a connected knowledge base for notes and ideas.",
-    icon: FilePlus2,
+    title: "Browse your knowledge",
+    description: "Open a space and continue from its document tree.",
+    icon: Layers3,
   },
   {
     title: "Create a draw board",
@@ -34,13 +38,33 @@ const suggestedActions: readonly SuggestedAction[] = [
 const DashboardPage = () => {
   const session = useSession();
   const viewer = session.data?.viewer;
+  const workspace = useWorkspaceContext();
 
   if (!viewer) return null;
 
-  return <DashboardHome firstName={viewer.firstName} />;
+  return <DashboardHome firstName={viewer.firstName} workspace={workspace} />;
 };
 
-function DashboardHome({ firstName }: { firstName: string }) {
+function DashboardHome({
+  firstName,
+  workspace,
+}: {
+  firstName: string;
+  workspace: ReturnType<typeof useWorkspaceContext>;
+}) {
+  const navigate = useNavigate();
+  const [isCreatingSpace, setIsCreatingSpace] = useState(false);
+  const [spaceTitle, setSpaceTitle] = useState("");
+
+  const createSpace = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const space = workspace.createSpace(spaceTitle);
+    if (!space) return;
+    setSpaceTitle("");
+    setIsCreatingSpace(false);
+    void navigate(workspaceSpacePath(space.id));
+  };
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col px-5 py-12 sm:px-8 md:py-20">
       <div className="max-w-2xl">
@@ -54,6 +78,77 @@ function DashboardHome({ firstName }: { firstName: string }) {
           Pick a starting point or open a document from your workspace.
         </p>
       </div>
+
+      <section aria-labelledby="workspace-spaces" className="mt-12">
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <div>
+            <h2 id="workspace-spaces" className="text-base font-medium">
+              Spaces
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Knowledge, documents and drafts grouped by purpose.
+            </p>
+          </div>
+          <Button variant="secondary" size="sm" onClick={() => setIsCreatingSpace(true)}>
+            <Plus /> New space
+          </Button>
+        </div>
+
+        {isCreatingSpace && (
+          <form
+            className="mb-3 flex items-center gap-2 rounded-2xl bg-muted/55 p-3"
+            onSubmit={createSpace}
+          >
+            <Layers3 className="ml-1 size-4 text-muted-foreground" />
+            <input
+              value={spaceTitle}
+              aria-label="Space name"
+              placeholder="Space name"
+              className="h-9 min-w-0 flex-1 bg-transparent px-2 text-sm outline-none placeholder:text-muted-foreground"
+              onChange={(event) => setSpaceTitle(event.target.value)}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Cancel"
+              onClick={() => setIsCreatingSpace(false)}
+            >
+              <X />
+            </Button>
+            <Button type="submit" size="sm" disabled={!spaceTitle.trim()}>
+              Create
+            </Button>
+          </form>
+        )}
+
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {workspace.spaces.map((space) => {
+            const count = workspace.documents.filter(
+              (document) => document.spaceId === space.id,
+            ).length;
+            return (
+              <button
+                key={space.id}
+                type="button"
+                className="group flex min-h-28 flex-col rounded-2xl border border-border bg-card p-4 text-left transition-[border-color,background-color] hover:border-foreground/20 hover:bg-muted/30"
+                onClick={() => void navigate(workspaceSpacePath(space.id))}
+              >
+                <span className="flex w-full items-center gap-2">
+                  <span className="grid size-8 place-items-center rounded-lg bg-muted">
+                    <Layers3 className="size-4" />
+                  </span>
+                  <span className="font-medium">{space.title}</span>
+                  <ArrowUpRight className="ml-auto size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                </span>
+                <span className="mt-auto text-xs text-muted-foreground">
+                  {count} top-level items
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       <section aria-labelledby="suggested-actions" className="mt-10">
         <h2 id="suggested-actions" className="mb-3 text-xs font-medium text-muted-foreground">

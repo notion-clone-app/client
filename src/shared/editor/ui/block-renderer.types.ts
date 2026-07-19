@@ -7,7 +7,9 @@ export type ReadonlyBlockRendererProps = Readonly<{
 export type EditableBlockRendererProps = Readonly<{
   block: DocumentBlock;
   onChange: (block: DocumentBlock) => void;
+  onDeleteEmpty: (blockId: string) => void;
   onInsertAfter: (blockId: string) => void;
+  onTextSelectionChange: (blockId: string, hasSelection: boolean) => void;
 }>;
 
 export type BlockOptionsRendererProps = EditableBlockRendererProps;

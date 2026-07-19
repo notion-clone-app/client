@@ -188,3 +188,35 @@
     @apply bg-primary/15 text-foreground;
   }
 }
+
+@layer components {
+  .workspace-sidebar-resizer {
+    background-image: linear-gradient(
+      to right,
+      transparent 3px,
+      color-mix(in srgb, var(--foreground) 22%, transparent) 3px,
+      color-mix(in srgb, var(--foreground) 22%, transparent) 4px,
+      transparent 4px
+    );
+    opacity: 0;
+    transition: opacity 120ms ease;
+  }
+
+  .workspace-sidebar-resizer:hover,
+  .workspace-sidebar-resizer:focus-visible {
+    opacity: 1;
+  }
+
+  .workspace-sidebar-resizer::-webkit-slider-thumb {
+    width: 8px;
+    height: 100dvh;
+    appearance: none;
+  }
+
+  .workspace-sidebar-resizer::-moz-range-thumb {
+    width: 8px;
+    height: 100dvh;
+    border: 0;
+    background: transparent;
+  }
+}
